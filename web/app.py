@@ -7,6 +7,7 @@ import html
 import json
 import logging
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -29,10 +30,21 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # 5 MiB, covers AOI file uploads
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 HTML_FILE = "activated_events_map.html"
 BASE_OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+# Warm up the KML parser so the first .kml preview/upload doesn't pay a
+# multi-second cold-import cost (GDAL/Fiona init on macOS runs ~2s), long
+# enough that browsers or proxies sometimes abort the request.
+try:
+    from utils.utils import create_polygon_from_kml  # noqa: F401
+
+    logging.info("Pre-loaded KML parser (utils.utils.create_polygon_from_kml)")
+except Exception as _kml_import_exc:  # noqa: BLE001
+    logging.warning("KML parser not available: %s", _kml_import_exc)
 
 processing_runs = {}
 processing_runs_lock = threading.Lock()
@@ -65,6 +77,137 @@ class _ThreadSafeSearchCache:
 
 
 LAST_SEARCH_CACHE = _ThreadSafeSearchCache()
+
+_ALLOWED_AOI_KINDS = {"draw", "coords", "wkt", "url", "file"}
+_ALLOWED_UPLOAD_SUFFIXES = {".geojson", ".json", ".kml"}
+_POINT_INFLATION_DEG = 0.01
+
+
+class _AoiError(ValueError):
+    """Raised for AOI parsing/validation problems. `status` is the HTTP code."""
+
+    def __init__(self, message, status=400):
+        super().__init__(message)
+        self.status = status
+
+
+def _parse_aoi_from_request(req):
+    """Extract (payload, aoi, uploaded_file) from a Flask request.
+
+    - JSON body: returns the parsed dict, either the payload's `aoi` field or a
+      synthesised `{"kind": "coords", ...}` from top-level lat_min/… (backwards
+      compatible with existing clients and tests).
+    - Multipart body: reads `payload_json` field + `aoi_file` file part.
+
+    Raises _AoiError on bad input.
+    """
+    ctype = (req.content_type or "").lower()
+
+    uploaded = None
+    if ctype.startswith("multipart/"):
+        raw = req.form.get("payload_json")
+        if not raw:
+            raise _AoiError("multipart body missing payload_json field")
+        try:
+            payload = json.loads(raw)
+        except (ValueError, TypeError) as exc:
+            raise _AoiError(f"payload_json is not valid JSON: {exc}") from exc
+        uploaded = req.files.get("aoi_file")
+    elif ctype.startswith("application/json") or not ctype:
+        payload = req.get_json(silent=True)
+        if payload is None:
+            raise _AoiError("Missing or invalid JSON body")
+    else:
+        raise _AoiError(f"Unsupported Content-Type: {ctype}", status=415)
+
+    aoi = payload.get("aoi")
+    if aoi is None:
+        # Backwards compat: synthesise a coords AOI from top-level bbox keys.
+        if all(k in payload for k in ("lat_min", "lat_max", "lon_min", "lon_max")):
+            aoi = {
+                "kind": "coords",
+                "value": {
+                    "lat_min": payload["lat_min"],
+                    "lat_max": payload["lat_max"],
+                    "lon_min": payload["lon_min"],
+                    "lon_max": payload["lon_max"],
+                },
+            }
+        else:
+            raise _AoiError("Missing bounding box data")
+
+    if not isinstance(aoi, dict) or aoi.get("kind") not in _ALLOWED_AOI_KINDS:
+        raise _AoiError(f"Invalid aoi.kind (expected one of {_ALLOWED_AOI_KINDS})")
+
+    kind = aoi["kind"]
+    value = aoi.get("value")
+    if kind in ("draw", "coords"):
+        if not isinstance(value, dict) or not all(
+            isinstance(value.get(k), (int, float))
+            for k in ("lat_min", "lat_max", "lon_min", "lon_max")
+        ):
+            raise _AoiError("draw/coords AOI needs 4 numeric bbox fields")
+    elif kind == "wkt":
+        if not isinstance(value, str) or not value.strip().upper().startswith(
+            ("POINT", "POLYGON")
+        ):
+            raise _AoiError("WKT AOI must start with POINT or POLYGON")
+    elif kind == "url":
+        if not isinstance(value, str) or not value.strip().lower().startswith(
+            "https://"
+        ):
+            raise _AoiError("URL AOI must be an https URL")
+    elif kind == "file":
+        if uploaded is None or not uploaded.filename:
+            raise _AoiError("file AOI requires an uploaded aoi_file part")
+
+    return payload, aoi, uploaded
+
+
+def _aoi_to_bbox_and_geometry(aoi, run_dir):
+    """Reduce any AOI kind to (bbox4, shapely_geometry).
+
+    bbox4 = [lat_min, lat_max, lon_min, lon_max]. Zero-width or zero-height
+    boxes (POINT input or coincident corners) are inflated by ±_POINT_INFLATION_DEG
+    so the downstream disasters pipeline doesn't reject a zero-area rectangle.
+    The returned geometry is NOT inflated — that stays exact for next_pass.
+    """
+    # Local import to keep module load light and match the pattern in
+    # _bbox_to_geometry (which also imports shapely lazily).
+    from shapely.geometry import box
+
+    from disaster_alerts.plot_html_map import _bbox_to_geometry
+
+    kind = aoi["kind"]
+    if kind in ("draw", "coords"):
+        v = aoi["value"]
+        geom = box(v["lon_min"], v["lat_min"], v["lon_max"], v["lat_max"])
+    elif kind == "wkt":
+        geom, _, _ = _bbox_to_geometry(aoi["value"], run_dir)
+    elif kind == "url":
+        geom, _, _ = _bbox_to_geometry(aoi["value"], run_dir)
+    elif kind == "file":
+        from disaster_alerts.plot_html_map import _geometry_from_file
+
+        geom = _geometry_from_file(aoi["value"])
+    else:
+        raise _AoiError(f"Unknown aoi.kind={kind}")
+
+    lon_min, lat_min, lon_max, lat_max = geom.bounds
+    if lat_max == lat_min:
+        lat_min -= _POINT_INFLATION_DEG
+        lat_max += _POINT_INFLATION_DEG
+        logging.warning(
+            "AOI collapsed on latitude; inflated by ±%s°", _POINT_INFLATION_DEG
+        )
+    if lon_max == lon_min:
+        lon_min -= _POINT_INFLATION_DEG
+        lon_max += _POINT_INFLATION_DEG
+        logging.warning(
+            "AOI collapsed on longitude; inflated by ±%s°", _POINT_INFLATION_DEG
+        )
+
+    return [lat_min, lat_max, lon_min, lon_max], geom
 
 
 def _get_search_signature(params):
@@ -111,10 +254,152 @@ def _create_run(search_type, task_count=1):
         "error": None,
         "search_type": search_type or ["opera_search"],
         "started_at": time.time(),
+        # Live progress fields — populated by workers via _set_progress.
+        # `stop_poll` is a threading.Event used to signal any active
+        # disk-polling thread to shut down; not JSON-serialised.
+        "stage": None,
+        "progress": None,
+        "stop_poll": threading.Event(),
     }
     with processing_runs_lock:
         processing_runs[run_id] = run_state
     return run_id
+
+
+def _set_progress(run_id, *, stage=None, current=None, total=None):
+    """Publish stage/progress updates onto a run's state.
+
+    Passing only `stage` leaves the numeric progress unchanged. Passing
+    `current` and/or `total` merges them into the existing progress dict
+    (creating one if needed), so a caller can bump `current` without
+    knowing `total` and vice versa.
+    """
+    updates = {}
+    if stage is not None:
+        updates["stage"] = stage
+    if current is not None or total is not None:
+        with processing_runs_lock:
+            existing = (processing_runs.get(run_id) or {}).get("progress") or {}
+        updates["progress"] = {
+            "current": current if current is not None else existing.get("current", 0),
+            "total": total if total is not None else existing.get("total", 0),
+        }
+    if updates:
+        _update_run_state(run_id, **updates)
+
+
+def _poll_dir_until_stopped(run_id, watch_dir, pattern, stop_event, interval=0.5):
+    """Push a live count of files matching `pattern` in `watch_dir` into
+    run_state['progress']['current'] until `stop_event` is set. Runs in a
+    dedicated daemon thread.
+    """
+    watch_dir = Path(watch_dir)
+    while not stop_event.wait(interval):
+        try:
+            n = sum(1 for _ in watch_dir.glob(pattern))
+        except OSError:
+            n = 0
+        _set_progress(run_id, current=n)
+
+
+def _monitor_disasters_progress(
+    run_id,
+    data_dir,
+    mosaic_dir,
+    expected_downloads,
+    expected_mosaics,
+    stop_event,
+    interval=0.5,
+):
+    """Watch both download and mosaic output directories concurrently and
+    publish the current stage + count. When the first *_mosaic.tif appears
+    the reported stage switches from download to mosaic — a heuristic that
+    matches how run_pipeline sequences its work.
+    """
+    data_dir = Path(data_dir)
+    mosaic_dir = Path(mosaic_dir)
+    while not stop_event.wait(interval):
+        try:
+            n_downloads = sum(1 for _ in data_dir.glob("OPERA_*.tif"))
+        except OSError:
+            n_downloads = 0
+        try:
+            n_mosaics = sum(1 for _ in mosaic_dir.glob("*_mosaic.tif"))
+        except OSError:
+            n_mosaics = 0
+        if n_mosaics > 0 and expected_mosaics > 0:
+            _set_progress(
+                run_id,
+                stage="Mosaicking products",
+                current=n_mosaics,
+                total=expected_mosaics,
+            )
+        else:
+            _set_progress(
+                run_id,
+                stage="Downloading granules",
+                current=n_downloads,
+                total=expected_downloads,
+            )
+
+
+def _watch_for_catalog_phase(run_id, run_start_time, stop_event, interval=0.5):
+    """Detect the overpasses → OPERA-catalog transition inside a
+    functionality="both" next_pass run.
+
+    next_pass.main() (next_pass.py:375) creates a `nextpass_outputs_<ts>/`
+    folder relative to CWD (== BASE_OUTPUT_DIR for the Flask process), and
+    writes `satellite_overpasses_map.html` inside it at the end of the
+    overpasses phase — immediately before the catalog query starts. We
+    watch for that file with an mtime filter to ignore stale artefacts
+    from earlier runs.
+    """
+    base = Path(BASE_OUTPUT_DIR)
+    while not stop_event.wait(interval):
+        try:
+            for nxt in base.glob("nextpass_outputs_*"):
+                marker = nxt / "satellite_overpasses_map.html"
+                try:
+                    if marker.is_file() and marker.stat().st_mtime >= run_start_time:
+                        _set_progress(run_id, stage="Searching OPERA catalog")
+                        return
+                except OSError:
+                    continue
+        except OSError:
+            continue
+
+
+def _estimate_disasters_totals(search_dir, target_products):
+    """Read search metadata to estimate expected download and mosaic counts.
+
+    Returns (expected_downloads, expected_mosaics). Zero on either means
+    'unknown' — the client renders an indeterminate bar in that case.
+    """
+    try:
+        from disasters.pipeline import read_opera_metadata
+
+        df = read_opera_metadata(search_dir)
+    except Exception as exc:  # noqa: BLE001
+        logging.warning("Progress estimator: failed to read metadata: %s", exc)
+        return 0, 0
+
+    if df.empty or "Dataset" not in df.columns:
+        return 0, 0
+
+    targets = target_products or df["Dataset"].dropna().unique().tolist()
+    sub = df[df["Dataset"].isin(targets)]
+    url_cols = [c for c in df.columns if c.startswith("Download URL")]
+    if not url_cols:
+        return 0, 0
+
+    expected_downloads = int(sub[url_cols].notna().sum().sum())
+
+    # Rough mosaic count: one mosaic per (dataset × unique date × layer).
+    # Off by a few due to time clustering, but far better than a spinner.
+    date_col = "Start Date" if "Start Date" in sub.columns else "Start Time"
+    n_dates = sub[date_col].dropna().nunique() if date_col in sub.columns else 1
+    expected_mosaics = len(targets) * max(1, n_dates) * len(url_cols)
+    return expected_downloads, expected_mosaics
 
 
 def _get_run_state(run_id):
@@ -137,6 +422,7 @@ def _update_run_state(run_id, **updates):
 
 def _mark_task_complete(run_id):
     """Safely decrements the active task counter and marks run false when 0."""
+    run_finished = False
     with processing_runs_lock:
         run_state = processing_runs.get(run_id)
         if run_state is None:
@@ -144,6 +430,12 @@ def _mark_task_complete(run_id):
         run_state["active_tasks"] -= 1
         if run_state["active_tasks"] <= 0:
             run_state["running"] = False
+            run_finished = True
+
+    if run_finished:
+        aoi_dir = Path(BASE_OUTPUT_DIR) / f"aoi_uploads_{run_id}"
+        if aoi_dir.is_dir():
+            shutil.rmtree(aoi_dir, ignore_errors=True)
 
 
 def generate_web_png(tif_path, png_path):
@@ -224,19 +516,28 @@ def run_overpasses_only(run_id, params):
     if run_state is None:
         return
 
+    stage_stop = None
+    stage_monitor = None
     try:
-        # Build the base terminal command using the bounding box
+        _set_progress(run_id, stage="Retrieving overpasses")
+        # DRCS map generation is gated inside next_pass on
+        # functionality == "both" (see next_pass.py:436 — it needs OPERA
+        # granule results to overlay against the overpass grid). Auto-
+        # upgrade the -f flag when the user enabled DRCS so their
+        # request isn't silently dropped.
+        drcs_enabled = bool(params.get("drcs") == "yes" and params.get("event_date"))
+        functionality_arg = "both" if drcs_enabled else "overpasses"
+        # Rich AOI form (WKT / URL / file path / 4 floats) is stashed on the
+        # run state by /process_bbox so next_pass gets the exact input the
+        # user provided, not the axis-aligned reduction.
         cmd = [
             sys.executable,
             "-m",
             "next_pass",
             "-b",
-            str(params["lat_min"]),
-            str(params["lat_max"]),
-            str(params["lon_min"]),
-            str(params["lon_max"]),
+            *run_state["np_bbox_arg"],
             "-f",
-            "overpasses",
+            functionality_arg,
         ]
 
         # Append UI parameters specific to the "Next Pass" panel
@@ -246,8 +547,19 @@ def run_overpasses_only(run_id, params):
         if params.get("np_lookback") and str(params["np_lookback"]).isdigit():
             cmd.extend(["-k", str(params["np_lookback"])])
 
-        if params.get("drcs") == "yes" and params.get("np_event_date"):
-            cmd.extend(["-g", params["np_event_date"]])
+        if drcs_enabled:
+            cmd.extend(["-g", params["event_date"]])
+            # With functionality="both" next_pass runs overpasses then the
+            # OPERA catalog before writing the DRCS map. Show the same
+            # two-stage progress as run_opera_search / run_disasters.
+            stage_stop = threading.Event()
+            _update_run_state(run_id, stop_poll=stage_stop)
+            stage_monitor = threading.Thread(
+                target=_watch_for_catalog_phase,
+                args=(run_id, run_state["started_at"], stage_stop),
+                daemon=True,
+            )
+            stage_monitor.start()
 
         # Take a snapshot of folders before running, execute,
         # then find the newly created folder
@@ -269,6 +581,10 @@ def run_overpasses_only(run_id, params):
     except Exception as e:
         _update_run_state(run_id, error=str(e))
     finally:
+        if stage_stop is not None:
+            stage_stop.set()
+            if stage_monitor is not None:
+                stage_monitor.join(timeout=1)
         _mark_task_complete(run_id)
 
 
@@ -319,21 +635,46 @@ def run_opera_search(run_id, params):
         # Isolate the search output
         output_dir = Path(BASE_OUTPUT_DIR) / f"search_outputs_{run_id}"
 
-        # Execute the search natively in Python
-        result_dir = run_search_only(
-            bbox=bbox,
-            output_dir=output_dir,
-            product=search_products,
-            date=pipeline_date,
-            number_of_dates=number_of_dates,
-            functionality=params.get("functionality", "opera_search"),
-            compute_cloudiness=bool(params.get("opt_cloud", False)),
-            satellites=(
-                params.get("satellites")
-                if "all" not in params.get("satellites", [])
-                else None
-            ),
-        )
+        # With functionality="both" run_search_only does overpasses first
+        # (inside next_pass) then the OPERA catalog query. Start with the
+        # overpasses label and swap once next_pass writes its overpasses
+        # HTML into BASE_OUTPUT_DIR/nextpass_outputs_<ts>/.
+        functionality = params.get("functionality", "opera_search")
+        stage_monitor = None
+        stage_stop = None
+        if functionality == "both":
+            _set_progress(run_id, stage="Retrieving overpasses")
+            stage_stop = threading.Event()
+            _update_run_state(run_id, stop_poll=stage_stop)
+            stage_monitor = threading.Thread(
+                target=_watch_for_catalog_phase,
+                args=(run_id, run_state["started_at"], stage_stop),
+                daemon=True,
+            )
+            stage_monitor.start()
+        else:
+            _set_progress(run_id, stage="Searching OPERA catalog")
+
+        try:
+            # Execute the search natively in Python
+            result_dir = run_search_only(
+                bbox=bbox,
+                output_dir=output_dir,
+                product=search_products,
+                date=pipeline_date,
+                number_of_dates=number_of_dates,
+                functionality=functionality,
+                compute_cloudiness=bool(params.get("opt_cloud", False)),
+                satellites=(
+                    params.get("satellites")
+                    if "all" not in params.get("satellites", [])
+                    else None
+                ),
+            )
+        finally:
+            if stage_stop is not None:
+                stage_stop.set()
+                stage_monitor.join(timeout=1)
 
         # Cache the search signature and folder path
         if result_dir:
@@ -431,16 +772,36 @@ def run_disasters(run_id, params):
         if cache_snap["signature"] == current_sig and cache_snap["folder"]:
             search_dir = Path(cache_snap["folder"])
         else:
-            search_dir = run_search_only(
-                bbox=bbox,
-                output_dir=output_dir,
-                product=search_products,
-                date=pipeline_date,
-                number_of_dates=number_of_dates,
-                functionality=functionality,
-                compute_cloudiness=bool(params.get("opt_cloud", False)),
-                satellites=satellites_list,
-            )
+            # functionality="both" triggers overpasses inside run_search_only
+            # before the catalog query — split the label accordingly.
+            stage_stop = None
+            stage_monitor = None
+            if functionality == "both":
+                _set_progress(run_id, stage="Retrieving overpasses")
+                stage_stop = threading.Event()
+                stage_monitor = threading.Thread(
+                    target=_watch_for_catalog_phase,
+                    args=(run_id, run_state["started_at"], stage_stop),
+                    daemon=True,
+                )
+                stage_monitor.start()
+            else:
+                _set_progress(run_id, stage="Searching OPERA catalog")
+            try:
+                search_dir = run_search_only(
+                    bbox=bbox,
+                    output_dir=output_dir,
+                    product=search_products,
+                    date=pipeline_date,
+                    number_of_dates=number_of_dates,
+                    functionality=functionality,
+                    compute_cloudiness=bool(params.get("opt_cloud", False)),
+                    satellites=satellites_list,
+                )
+            finally:
+                if stage_stop is not None:
+                    stage_stop.set()
+                    stage_monitor.join(timeout=1)
             if search_dir:
                 LAST_SEARCH_CACHE.update(signature=current_sig, folder=search_dir)
 
@@ -460,69 +821,100 @@ def run_disasters(run_id, params):
         if not target_products:
             target_products = ["OPERA_L3_DSWX-HLS_V1"]
 
+        # Estimate work sizes from the search metadata so the overlay can
+        # show real N/M counts instead of an indeterminate spinner.
+        expected_downloads, expected_mosaics = _estimate_disasters_totals(
+            search_dir, target_products
+        )
+        stop_event = run_state.get("stop_poll") or threading.Event()
+        _update_run_state(run_id, stop_poll=stop_event)
+        _set_progress(
+            run_id,
+            stage="Downloading granules",
+            current=0,
+            total=expected_downloads,
+        )
+        monitor = threading.Thread(
+            target=_monitor_disasters_progress,
+            args=(
+                run_id,
+                Path(output_dir) / "data",
+                Path(output_dir),
+                expected_downloads,
+                expected_mosaics,
+                stop_event,
+            ),
+            daemon=True,
+        )
+        monitor.start()
+
         # Pass the entire list to the newly upgraded pipeline functions
         mode_dir = None
-        if action == "download":
-            res_dir = run_download_only(
-                bbox=bbox,
-                output_dir=output_dir,
-                date=pipeline_date,
-                number_of_dates=number_of_dates,
-                product=target_products,
-                functionality=functionality,
-                compute_cloudiness=bool(params.get("opt_cloud", False)),
-            )
-            if res_dir:
-                mode_dir = res_dir
-
-        elif action == "mosaic":
-            data_dir = run_download_only(
-                bbox=bbox,
-                output_dir=output_dir,
-                date=pipeline_date,
-                number_of_dates=number_of_dates,
-                product=target_products,
-                functionality=functionality,
-                compute_cloudiness=bool(params.get("opt_cloud", False)),
-            )
-            if data_dir:
-                res_dir = run_mosaic_only(
-                    input_dir=data_dir,
-                    output_dir=output_dir,
+        try:
+            if action == "download":
+                res_dir = run_download_only(
                     bbox=bbox,
-                    benchmark=False,
+                    output_dir=output_dir,
+                    date=pipeline_date,
+                    number_of_dates=number_of_dates,
+                    product=target_products,
+                    functionality=functionality,
+                    compute_cloudiness=bool(params.get("opt_cloud", False)),
                 )
                 if res_dir:
                     mode_dir = res_dir
 
-        else:
-            config = PipelineConfig(
-                bbox=bbox,
-                output_dir=output_dir,
-                local_dir=None,
-                search_dir=search_dir,
-                product=target_products,
-                functionality=functionality,
-                satellites=satellites_list,
-                date=pipeline_date,
-                number_of_dates=number_of_dates,
-                layout_title=(
-                    f"Disaster Analysis ({bbox[0]:.2f},{bbox[2]:.2f} –"
-                    f" {bbox[1]:.2f},{bbox[3]:.2f})"
-                ),
-                reclassify_snow_ice=bool(params.get("opt_rc", False)),
-                compute_cloudiness=bool(params.get("opt_cloud", False)),
-                no_mask=bool(params.get("opt_nomask", False)),
-                filter_date=params.get("opt_fd") or None,
-                slope_threshold=(
-                    int(params["opt_st"])
-                    if str(params.get("opt_st")).isdigit()
-                    else None
-                ),
-            )
-            res_dir = run_pipeline(config)
-            if res_dir:
-                mode_dir = res_dir
+            elif action == "mosaic":
+                data_dir = run_download_only(
+                    bbox=bbox,
+                    output_dir=output_dir,
+                    date=pipeline_date,
+                    number_of_dates=number_of_dates,
+                    product=target_products,
+                    functionality=functionality,
+                    compute_cloudiness=bool(params.get("opt_cloud", False)),
+                )
+                if data_dir:
+                    res_dir = run_mosaic_only(
+                        input_dir=data_dir,
+                        output_dir=output_dir,
+                        bbox=bbox,
+                        benchmark=False,
+                    )
+                    if res_dir:
+                        mode_dir = res_dir
+
+            else:
+                config = PipelineConfig(
+                    bbox=bbox,
+                    output_dir=output_dir,
+                    local_dir=None,
+                    search_dir=search_dir,
+                    product=target_products,
+                    functionality=functionality,
+                    satellites=satellites_list,
+                    date=pipeline_date,
+                    number_of_dates=number_of_dates,
+                    layout_title=(
+                        f"Disaster Analysis ({bbox[0]:.2f},{bbox[2]:.2f} –"
+                        f" {bbox[1]:.2f},{bbox[3]:.2f})"
+                    ),
+                    reclassify_snow_ice=bool(params.get("opt_rc", False)),
+                    compute_cloudiness=bool(params.get("opt_cloud", False)),
+                    no_mask=bool(params.get("opt_nomask", False)),
+                    filter_date=params.get("opt_fd") or None,
+                    slope_threshold=(
+                        int(params["opt_st"])
+                        if str(params.get("opt_st")).isdigit()
+                        else None
+                    ),
+                )
+                res_dir = run_pipeline(config)
+                if res_dir:
+                    mode_dir = res_dir
+        finally:
+            stop_event.set()
+            monitor.join(timeout=1)
 
         if mode_dir and mode_dir.exists():
             _update_run_state(run_id, latest_folder=str(output_dir))
@@ -550,28 +942,82 @@ def test_ping():
     return "pong", 200
 
 
+# ---- AOI preview (for URL and KML client-side rendering) ----
+@app.route("/aoi_preview", methods=["POST"])
+def aoi_preview():
+    """Return the GeoJSON of a proposed AOI so the browser can render it
+    before SEARCH. Used by URL and KML modes, which the browser can't preview
+    itself (CORS for URL, no built-in parser for KML).
+    """
+    import tempfile
+
+    from werkzeug.utils import secure_filename
+
+    try:
+        _payload, aoi, uploaded = _parse_aoi_from_request(request)
+    except _AoiError as exc:
+        return jsonify({"error": str(exc)}), exc.status
+
+    with tempfile.TemporaryDirectory(
+        prefix="aoi_preview_", dir=BASE_OUTPUT_DIR
+    ) as tmpdir:
+        tmp_path = Path(tmpdir)
+
+        if aoi["kind"] == "file":
+            safe = secure_filename(uploaded.filename) or "aoi_preview_upload"
+            suffix = Path(safe).suffix.lower()
+            if suffix not in _ALLOWED_UPLOAD_SUFFIXES:
+                return (
+                    jsonify({"error": f"Unsupported upload suffix {suffix!r}"}),
+                    400,
+                )
+            saved = tmp_path / safe
+            uploaded.save(str(saved))
+            aoi["value"] = str(saved)
+
+        try:
+            _bbox, geom = _aoi_to_bbox_and_geometry(aoi, tmp_path)
+        except _AoiError as exc:
+            return jsonify({"error": str(exc)}), exc.status
+        except Exception:  # noqa: BLE001 - log details, keep response generic
+            logging.exception("AOI preview failed")
+            return jsonify({"error": "Failed to parse AOI input"}), 400
+
+        payload = {"geometry": geom.__geo_interface__}
+
+    return jsonify(payload)
+
+
 # ---- Process bbox ----
 @app.route("/process_bbox", methods=["POST"])
 def process_bbox():
-    data = request.get_json()
-    if not data or not all(
-        k in data for k in ("lat_min", "lat_max", "lon_min", "lon_max")
-    ):
-        return jsonify({"error": "Missing bounding box data"}), 400
+    from werkzeug.utils import secure_filename
 
-    print(
-        f"Received search request for bbox: {data.get('lat_min')},"
-        f" {data.get('lon_min')}"
-    )
+    try:
+        data, aoi, uploaded = _parse_aoi_from_request(request)
+    except _AoiError as exc:
+        return jsonify({"error": str(exc)}), exc.status
 
     search_type = data.get("search_type", ["opera_search"])
     if isinstance(search_type, str):
         search_type = [search_type]
 
-    targets = []
+    # DRCS map generation only exists on the next_pass CLI (next_pass.py:436
+    # gates it on functionality="both", and next_pass.run_next_pass() — the
+    # Python API used by disasters.pipeline.run_search_only — doesn't expose
+    # the -g knob at all). So any DRCS-enabled request has to route through
+    # run_overpasses_only (which invokes the CLI subprocess and already
+    # auto-upgrades -f to "both"). This overrides the workflow-tick routing.
+    drcs_wanted = bool(data.get("drcs") == "yes" and data.get("event_date"))
 
-    # Determine which processing function to run based on the search type
-    if "disasters" in search_type or "all" in search_type:
+    targets = []
+    if drcs_wanted and (
+        "overpasses" in search_type
+        or "opera_search" in search_type
+        or "all" in search_type
+    ):
+        targets.append(run_overpasses_only)
+    elif "disasters" in search_type or "all" in search_type:
         targets.append(run_disasters)
     elif "opera_search" in search_type and "overpasses" in search_type:
         data["functionality"] = "both"
@@ -585,10 +1031,75 @@ def process_bbox():
     if not targets:
         return jsonify({"error": "No valid workflows selected"}), 400
 
-    # Create a unified run ID for this request, injecting the target count
     run_id = _create_run(search_type, task_count=len(targets))
 
-    # Spawn a separate thread for every active target
+    # Prepare a per-run scratch dir for uploads/URL downloads.
+    run_dir = Path(BASE_OUTPUT_DIR) / f"aoi_uploads_{run_id}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    if aoi["kind"] == "file":
+        safe_name = secure_filename(uploaded.filename) or "aoi_upload"
+        suffix = Path(safe_name).suffix.lower()
+        if suffix not in _ALLOWED_UPLOAD_SUFFIXES:
+            return (
+                jsonify({"error": f"Unsupported upload suffix {suffix!r}"}),
+                400,
+            )
+        saved_path = run_dir / safe_name
+        uploaded.save(str(saved_path))
+        aoi["value"] = str(saved_path)
+
+    try:
+        bbox, _geom = _aoi_to_bbox_and_geometry(aoi, run_dir)
+    except _AoiError as exc:
+        return jsonify({"error": str(exc)}), exc.status
+    except Exception:  # noqa: BLE001 - log details, keep response generic
+        logging.exception("AOI parse failure")
+        return jsonify({"error": "Failed to parse AOI input"}), 400
+
+    # The client's own numbers are left alone when they're usable: keeping the
+    # params dict byte-identical for draw/coords preserves backwards
+    # compatibility with existing /process_bbox JSON callers. A box that
+    # collapses on either axis is not usable — run_disasters feeds these keys
+    # into the mosaic master grid, where zero extent yields a 1x1 pixel
+    # product — so there the inflated bbox wins. The map's point tool and
+    # coincident typed corners both send exactly that.
+    drawn = aoi["value"] if aoi["kind"] in ("draw", "coords") else None
+    zero_extent = drawn is not None and (
+        drawn["lat_min"] == drawn["lat_max"] or drawn["lon_min"] == drawn["lon_max"]
+    )
+    if zero_extent or not all(
+        k in data for k in ("lat_min", "lat_max", "lon_min", "lon_max")
+    ):
+        data["lat_min"], data["lat_max"], data["lon_min"], data["lon_max"] = bbox
+
+    # Compute next_pass -b tokens inline (per trim decision, no helper).
+    if drawn is not None:
+        if (
+            drawn["lat_min"] == drawn["lat_max"]
+            and drawn["lon_min"] == drawn["lon_max"]
+        ):
+            # next_pass reads two tokens as an exact point (utils.bbox_type),
+            # so a point AOI stays a point instead of the inflated box.
+            np_bbox_arg = [str(drawn["lat_min"]), str(drawn["lon_min"])]
+        else:
+            np_bbox_arg = [str(bbox[0]), str(bbox[1]), str(bbox[2]), str(bbox[3])]
+    elif aoi["kind"] == "wkt":
+        np_bbox_arg = [aoi["value"]]
+    elif aoi["kind"] == "url":
+        np_bbox_arg = [aoi["value"]]
+    else:  # file
+        np_bbox_arg = [aoi["value"]]
+
+    # Stash next_pass tokens in run_state so run_overpasses_only can read
+    # them WITHOUT polluting the params dict (which existing tests assert on).
+    _update_run_state(run_id, np_bbox_arg=np_bbox_arg)
+
+    print(
+        f"Received search request for bbox: {data.get('lat_min')},"
+        f" {data.get('lon_min')}"
+    )
+
     for target in targets:
         threading.Thread(target=target, args=(run_id, data), daemon=True).start()
 
@@ -603,10 +1114,14 @@ def processing_status():
     if run_state is None:
         return jsonify({"error": "Unknown or missing run_id"}), 404
 
+    started_at = run_state.get("started_at") or time.time()
     return jsonify(
         {
             "running": run_state["running"],
             "error": run_state["error"],
+            "stage": run_state.get("stage"),
+            "progress": run_state.get("progress"),
+            "elapsed_seconds": max(0.0, time.time() - started_at),
         }
     )
 
@@ -675,9 +1190,11 @@ def show_maps():
 
     sat_map_path = next(Path(folder).rglob("satellite_overpasses_map.html"), None)
     opera_map_path = next(Path(folder).rglob("opera_products_map.html"), None)
+    drcs_map_path = next(Path(folder).rglob("opera_products_drcs_map.html"), None)
 
     show_sat = sat_map_path is not None
     show_opera = opera_map_path is not None
+    show_drcs = drcs_map_path is not None
 
     iframes = ""
     if show_sat:
@@ -686,6 +1203,9 @@ def show_maps():
     if show_opera:
         rel_opera = os.path.relpath(opera_map_path, folder).replace(os.sep, "/")
         iframes += f'<iframe src="/maps/{run_id}/{rel_opera}"></iframe>'
+    if show_drcs:
+        rel_drcs = os.path.relpath(drcs_map_path, folder).replace(os.sep, "/")
+        iframes += f'<iframe src="/maps/{run_id}/{rel_drcs}"></iframe>'
 
     # Loop through and convert TIF files to PNG on-the-fly
     geotiff_viewer = ""
@@ -803,7 +1323,7 @@ def show_maps():
             </script>
             """
 
-    map_count = sum([show_sat, show_opera])
+    map_count = sum([show_sat, show_opera, show_drcs])
     if uses_disasters and tif_layers_json:
         map_count += 1
 

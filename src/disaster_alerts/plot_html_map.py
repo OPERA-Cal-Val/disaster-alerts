@@ -169,7 +169,7 @@ def _generate_events_html_map(
         def __init__(self):
             super().__init__()
             self._template = Template(
-                """
+                r"""
                 {% macro html(this, kwargs) %}
                 <style>
                     #control-panel {
@@ -198,6 +198,103 @@ def _generate_events_html_map(
                         border: 1px solid #9ca3af; border-radius: 4px; padding: 4px 8px;
                         font-size: 13px; background-color: #ffffff; height: 34px;
                         box-sizing: border-box;
+                    }
+                    #control-panel input[readonly] {
+                        background-color: #f3f4f6; color: #6b7280;
+                        cursor: not-allowed;
+                    }
+                    /* Disable the Leaflet Draw toolbar when the AOI mode
+                       isn't 'draw' so users can't accidentally add a
+                       rectangle that no other mode would react to. */
+                    .leaflet-draw.aoi-draw-disabled {
+                        opacity: 0.4;
+                        pointer-events: none;
+                    }
+                    /* #control-panel overlays the map at z-index 1000 and the
+                       draw toolbar's Save/Cancel flyout opens rightwards
+                       underneath it, which swallows those clicks. Leaflet's
+                       .leaflet-top is itself z-index 1000 and creates the
+                       stacking context, so it's the one that has to be
+                       lifted — a z-index on .leaflet-draw can't escape it.
+                       Only the narrow left control column moves, so nothing
+                       in the panel gets covered. */
+                    .leaflet-top.leaflet-left {
+                        z-index: 1001;
+                    }
+                    /* Point-placement tool: show an "x" instead of the
+                       default marker-pin icon so it reads as "place a
+                       point" rather than "drop a pin/marker". */
+                    .leaflet-draw-toolbar a.leaflet-draw-draw-marker {
+                        background-image: none !important;
+                        display: flex; align-items: center;
+                        justify-content: center;
+                    }
+                    .leaflet-draw-toolbar a.leaflet-draw-draw-marker::before {
+                        content: "\2715";
+                        font-size: 16px; font-weight: bold; color: #374151;
+                    }
+                    .aoi-point-x {
+                        font-size: 20px; font-weight: bold; color: #b91c1c;
+                        line-height: 22px; text-align: center;
+                        text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 2px #fff;
+                    }
+                    /* Progress overlay shown after SEARCH is submitted. */
+                    #progress-overlay {
+                        position: fixed; inset: 0; z-index: 5000;
+                        background: rgba(15, 23, 42, 0.55);
+                        display: none; align-items: center;
+                        justify-content: center;
+                        font-family: Arial, sans-serif;
+                    }
+                    #progress-overlay.visible { display: flex; }
+                    .progress-card {
+                        background: #ffffff; padding: 22px 28px;
+                        border-radius: 10px; min-width: 360px; max-width: 480px;
+                        box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+                    }
+                    .progress-title {
+                        display: flex; align-items: center; gap: 10px;
+                        font-size: 16px; font-weight: bold; color: #111827;
+                    }
+                    .progress-title #progress-elapsed {
+                        margin-left: auto; color: #6b7280;
+                        font-variant-numeric: tabular-nums;
+                    }
+                    #progress-stage {
+                        margin: 10px 0 4px; color: #374151; font-size: 14px;
+                    }
+                    #progress-count {
+                        color: #059669;
+                        font-variant-numeric: tabular-nums; font-size: 13px;
+                        min-height: 16px;
+                    }
+                    .progress-bar-outer {
+                        margin-top: 8px; background: #e5e7eb; border-radius: 6px;
+                        height: 12px; overflow: hidden;
+                    }
+                    .progress-bar-inner {
+                        height: 100%; width: 0%; background: #059669;
+                        transition: width 0.4s ease;
+                    }
+                    .progress-bar-inner.indeterminate {
+                        width: 40%;
+                        animation: progress-indet 1.4s ease-in-out infinite;
+                    }
+                    @keyframes progress-indet {
+                        0%   { margin-left: -40%; }
+                        100% { margin-left: 100%; }
+                    }
+                    .progress-spinner {
+                        display: inline-block; width: 14px; height: 14px;
+                        border-radius: 50%; border: 2px solid #d1d5db;
+                        border-top-color: #059669;
+                        animation: progress-spin 0.9s linear infinite;
+                    }
+                    @keyframes progress-spin {
+                        to { transform: rotate(360deg); }
+                    }
+                    .progress-hint {
+                        margin-top: 10px; font-size: 12px; color: #6b7280;
                     }
                     .multi-dropdown {
                         position: relative; display: inline-block;
@@ -254,6 +351,25 @@ def _generate_events_html_map(
                     }
                 </style>
 
+                <div id="progress-overlay">
+                    <div class="progress-card">
+                        <div class="progress-title">
+                            <span class="progress-spinner"></span>
+                            <span>Processing</span>
+                            <span id="progress-elapsed">00:00</span>
+                        </div>
+                        <div id="progress-stage">Starting…</div>
+                        <div id="progress-count"></div>
+                        <div class="progress-bar-outer">
+                            <div id="progress-bar-inner"
+                                class="progress-bar-inner indeterminate"></div>
+                        </div>
+                        <div class="progress-hint">
+                            You'll be redirected when done.
+                        </div>
+                    </div>
+                </div>
+
                 <div id="control-panel">
                     <div class="main-row">
                         <span class="panel-label">Workflow:</span>
@@ -302,7 +418,44 @@ def _generate_events_html_map(
                         <button id="action-btn">SEARCH</button>
                     </div>
 
-                    <div id="next-pass-panel" class="settings-panel">
+                    <div id="aoi-panel" class="settings-panel">
+                        <span class="panel-label">↳ AOI:</span>
+                        <div class="radio-group" id="aoi-mode-group">
+                            <label><input type="radio" name="aoi_mode" value="draw"
+                                checked> Draw</label>
+                            <label><input type="radio" name="aoi_mode" value="coords">
+                                Coords</label>
+                            <label><input type="radio" name="aoi_mode" value="wkt">
+                                WKT</label>
+                            <label><input type="radio" name="aoi_mode" value="url">
+                                URL</label>
+                            <label><input type="radio" name="aoi_mode" value="file">
+                                File</label>
+                        </div>
+                        <div id="aoi-coords"
+                            style="display:none; gap:6px; align-items:center;">
+                            <input id="aoi_lat_min" type="number" step="any"
+                                placeholder="lat_min" style="width:90px;">
+                            <input id="aoi_lat_max" type="number" step="any"
+                                placeholder="lat_max" style="width:90px;">
+                            <input id="aoi_lon_min" type="number" step="any"
+                                placeholder="lon_min" style="width:90px;">
+                            <input id="aoi_lon_max" type="number" step="any"
+                                placeholder="lon_max" style="width:90px;">
+                        </div>
+                        <input id="aoi_wkt" type="text"
+                            placeholder="POINT(lon lat) or POLYGON((lon lat, ...))"
+                            style="display:none; width:340px;">
+                        <input id="aoi_url" type="url"
+                            placeholder="https://... .geojson"
+                            style="display:none; width:340px;">
+                        <input id="aoi_file" type="file"
+                            accept=".geojson,.json,.kml" style="display:none;">
+                        <span id="aoi_status"
+                            style="font-size:12px; color:#374151;"></span>
+                    </div>
+
+                    <div id="next-pass-panel" class="settings-panel"
                         <span class="panel-label">↳ Next Pass:</span>
 
                         <div class="multi-dropdown" id="sat-dropdown">
@@ -552,21 +705,95 @@ def _generate_events_html_map(
                 toggleDisDateStrat();
                 updateDisasterOptions();
 
-                // --- Map Box Drawing ---
+                // --- Map Box / Point Drawing ---
+                // Replace the marker tool's default pin icon with an "x", and
+                // relabel it, so it reads as "place a point" rather than
+                // "drop a map pin".
+                if (typeof L !== 'undefined' && L.Draw && L.Draw.Marker) {
+                    L.Draw.Marker.prototype.options.icon = L.divIcon({
+                        className: 'aoi-point-icon',
+                        html: '<div class="aoi-point-x">&times;</div>',
+                        iconSize: [22, 22],
+                        iconAnchor: [11, 11]
+                    });
+                }
+                if (typeof L !== 'undefined' && L.drawLocal) {
+                    L.drawLocal.draw.handlers.marker.tooltip.start =
+                        'Click map to place a point.';
+                    L.drawLocal.draw.toolbar.buttons.marker = 'Place a point';
+                }
+                // Both strings above are consumed while the Draw control is
+                // constructed, which already happened by the time this runs,
+                // so each needs a nudge: the button title is patched on the
+                // rendered DOM, and the cursor tooltip — cached per handler
+                // instance in initialize() — is refreshed on enable.
+                var pointToolBtn = document.querySelector(
+                    'a.leaflet-draw-draw-marker'
+                );
+                if (pointToolBtn) pointToolBtn.title = 'Place a point';
+                if (typeof L !== 'undefined' && L.Draw && L.Draw.Marker) {
+                    var markerAddHooks = L.Draw.Marker.prototype.addHooks;
+                    L.Draw.Marker.prototype.addHooks = function() {
+                        this._initialLabelText =
+                            L.drawLocal.draw.handlers.marker.tooltip.start;
+                        return markerAddHooks.call(this);
+                    };
+                }
+
+                function bboxFromLayer(layer) {
+                    if (layer.getLatLng) {
+                        // Point AOI: lat/lon collapsed to a single coordinate,
+                        // exactly like a WKT POINT(...) input.
+                        var ll = layer.getLatLng();
+                        return {
+                            lat_min: ll.lat,
+                            lat_max: ll.lat,
+                            lon_min: ll.lng,
+                            lon_max: ll.lng
+                        };
+                    }
+                    var bounds = layer.getBounds();
+                    return {
+                        lat_min: bounds.getSouth(),
+                        lat_max: bounds.getNorth(),
+                        lon_min: bounds.getWest(),
+                        lon_max: bounds.getEast()
+                    };
+                }
+
                 {{this._parent.get_name()}}.on('draw:created', function(e) {
                     if (currentBboxLayer) {
                         {{this._parent.get_name()}}.removeLayer(currentBboxLayer);
                     }
                     currentBboxLayer = e.layer;
                     currentBboxLayer.addTo({{this._parent.get_name()}});
-                    var bounds = currentBboxLayer.getBounds();
-                    currentBbox = {
-                        lat_min: bounds.getSouth(),
-                        lat_max: bounds.getNorth(),
-                        lon_min: bounds.getWest(),
-                        lon_max: bounds.getEast()
-                    };
+                    currentBbox = bboxFromLayer(currentBboxLayer);
                     justDrawn = true;
+                    if (currentAoiMode() === 'draw') syncDrawCoords();
+                });
+
+                // Saving an edit has to re-read the shape, otherwise SEARCH
+                // submits the coordinates from before the drag. Only the save
+                // event is handled on purpose: Cancel reverts the layer
+                // without notifying, so a live update would strand the
+                // dragged-to position in currentBbox.
+                {{this._parent.get_name()}}.on('draw:edited', function() {
+                    if (!currentBboxLayer) return;
+                    currentBbox = bboxFromLayer(currentBboxLayer);
+                    if (currentAoiMode() === 'draw') syncDrawCoords();
+                });
+
+                // Likewise a deleted shape must not leave its coordinates
+                // behind as an invisible AOI.
+                {{this._parent.get_name()}}.on('draw:deleted', function(e) {
+                    var removed = false;
+                    e.layers.eachLayer(function(l) {
+                        if (l === currentBboxLayer) removed = true;
+                    });
+                    if (!removed) return;
+                    currentBboxLayer = null;
+                    currentBbox = null;
+                    if (currentAoiMode() === 'draw') syncDrawCoords();
                 });
 
                 {{this._parent.get_name()}}.on('click', function() {
@@ -578,18 +805,425 @@ def _generate_events_html_map(
                         {{this._parent.get_name()}}.removeLayer(currentBboxLayer);
                         currentBboxLayer = null;
                         currentBbox = null;
+                        if (currentAoiMode() === 'draw') syncDrawCoords();
                     }
                 });
 
-                // --- Submit Payload ---
-                document.getElementById('action-btn').onclick = function() {
-                    if (!currentBbox) {
-                        alert("Please draw a bounding box!");
-                        return;
-                    }
+                // --- AOI Input Handling (Coords / WKT / URL / File) ---
+                var previewLayer = null;
+                var uploadedFile = null;
 
-                    const payload = {
-                        ...currentBbox,
+                function setAoiStatus(msg, isError) {
+                    var el = document.getElementById('aoi_status');
+                    el.textContent = msg || '';
+                    el.style.color = isError ? '#dc2626' : '#374151';
+                }
+                function clearPreview() {
+                    if (previewLayer) {
+                        {{this._parent.get_name()}}.removeLayer(previewLayer);
+                        previewLayer = null;
+                    }
+                }
+                function clearDrawnBox() {
+                    if (currentBboxLayer) {
+                        {{this._parent.get_name()}}.removeLayer(currentBboxLayer);
+                        currentBboxLayer = null;
+                        currentBbox = null;
+                    }
+                }
+                function currentAoiMode() {
+                    return document.querySelector(
+                        'input[name="aoi_mode"]:checked'
+                    ).value;
+                }
+                function showAoiInput(mode) {
+                    var ids = ['aoi-coords', 'aoi_wkt', 'aoi_url', 'aoi_file'];
+                    ids.forEach(function(id) {
+                        document.getElementById(id).style.display = 'none';
+                    });
+                    if (mode === 'coords' || mode === 'draw') {
+                        document.getElementById('aoi-coords').style.display = 'flex';
+                    } else if (mode === 'wkt') {
+                        document.getElementById('aoi_wkt').style.display =
+                            'inline-block';
+                    } else if (mode === 'url') {
+                        document.getElementById('aoi_url').style.display =
+                            'inline-block';
+                    } else if (mode === 'file') {
+                        document.getElementById('aoi_file').style.display =
+                            'inline-block';
+                    }
+                    // Draw mode shows the same fields as Coords but read-only,
+                    // populated by the Leaflet Draw handler.
+                    var readOnly = (mode === 'draw');
+                    ['aoi_lat_min', 'aoi_lat_max', 'aoi_lon_min', 'aoi_lon_max']
+                        .forEach(function(id) {
+                            document.getElementById(id).readOnly = readOnly;
+                        });
+                    if (mode === 'draw') {
+                        // Draw owns currentBboxLayer; any lingering
+                        // typed-input preview goes so one shape shows.
+                        clearPreview();
+                        syncDrawCoords();
+                    } else if (mode === 'coords') {
+                        // Green preview from a prior wkt/url/file visit
+                        // shouldn't hang around under coord editing.
+                        // Drawn blue box is intentionally kept for the
+                        // Draw ↔ Coords adjust flow.
+                        clearPreview();
+                    } else {
+                        // wkt / url / file: fresh canvas.
+                        clearPreview();
+                        clearDrawnBox();
+                        syncDrawCoords();
+                    }
+                    // Match the drawn box's colour to the mode it now
+                    // belongs to: Leaflet-Draw blue in Draw, green in
+                    // Coords (matches previewLayer styling).
+                    if (currentBboxLayer && currentBboxLayer.setStyle) {
+                        if (mode === 'coords') {
+                            currentBboxLayer.setStyle({
+                                color: '#059669',
+                                weight: 2,
+                                fillOpacity: 0.1
+                            });
+                        } else if (mode === 'draw') {
+                            currentBboxLayer.setStyle({
+                                color: '#3388ff',
+                                weight: 4,
+                                fillOpacity: 0.2
+                            });
+                        }
+                    }
+                    // Disable the Leaflet Draw toolbar outside Draw mode.
+                    var drawCtrl = document.querySelector('.leaflet-draw');
+                    if (drawCtrl) {
+                        if (mode === 'draw') {
+                            drawCtrl.classList.remove('aoi-draw-disabled');
+                        } else {
+                            drawCtrl.classList.add('aoi-draw-disabled');
+                        }
+                    }
+                    // Reset every other mode's DOM input value so switching
+                    // back to them later doesn't resurrect stale text/files.
+                    if (mode !== 'wkt') {
+                        document.getElementById('aoi_wkt').value = '';
+                    }
+                    if (mode !== 'url') {
+                        document.getElementById('aoi_url').value = '';
+                    }
+                    if (mode !== 'file') {
+                        document.getElementById('aoi_file').value = '';
+                        uploadedFile = null;
+                    }
+                    setAoiStatus('', false);
+                }
+
+                function syncDrawCoords() {
+                    var la1 = document.getElementById('aoi_lat_min');
+                    var la2 = document.getElementById('aoi_lat_max');
+                    var lo1 = document.getElementById('aoi_lon_min');
+                    var lo2 = document.getElementById('aoi_lon_max');
+                    if (currentBbox) {
+                        la1.value = currentBbox.lat_min.toFixed(4);
+                        la2.value = currentBbox.lat_max.toFixed(4);
+                        lo1.value = currentBbox.lon_min.toFixed(4);
+                        lo2.value = currentBbox.lon_max.toFixed(4);
+                    } else {
+                        la1.value = ''; la2.value = '';
+                        lo1.value = ''; lo2.value = '';
+                    }
+                }
+                document.querySelectorAll('input[name="aoi_mode"]').forEach(
+                    function(radio) {
+                        radio.addEventListener('change', function() {
+                            showAoiInput(currentAoiMode());
+                        });
+                    }
+                );
+                showAoiInput(currentAoiMode());
+
+                function previewCoords() {
+                    var la1 = parseFloat(
+                        document.getElementById('aoi_lat_min').value
+                    );
+                    var la2 = parseFloat(
+                        document.getElementById('aoi_lat_max').value
+                    );
+                    var lo1 = parseFloat(
+                        document.getElementById('aoi_lon_min').value
+                    );
+                    var lo2 = parseFloat(
+                        document.getElementById('aoi_lon_max').value
+                    );
+                    if ([la1, la2, lo1, lo2].some(isNaN)) return;
+                    clearPreview();
+                    clearDrawnBox();
+                    previewLayer = L.rectangle(
+                        [[la1, lo1], [la2, lo2]],
+                        {color: '#059669', weight: 2, fillOpacity: 0.1}
+                    );
+                    previewLayer.addTo({{this._parent.get_name()}});
+                    {{this._parent.get_name()}}.fitBounds(previewLayer.getBounds());
+                }
+                ['aoi_lat_min', 'aoi_lat_max', 'aoi_lon_min', 'aoi_lon_max']
+                    .forEach(function(id) {
+                        document.getElementById(id).addEventListener(
+                            'change', previewCoords
+                        );
+                    });
+
+                function parseWkt(s) {
+                    s = s.trim();
+                    var m = /^POINT\s*\(\s*(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s*\)$/i
+                        .exec(s);
+                    if (m) {
+                        return {
+                            type: 'Point',
+                            lon: parseFloat(m[1]),
+                            lat: parseFloat(m[2])
+                        };
+                    }
+                    m = /^POLYGON\s*\(\s*\(\s*(.+?)\s*\)\s*\)$/i.exec(s);
+                    if (m) {
+                        var pts = m[1].split(',').map(function(pair) {
+                            var parts = pair.trim().split(/\s+/);
+                            return [parseFloat(parts[1]), parseFloat(parts[0])];
+                        });
+                        var bad = pts.some(function(p) {
+                            return isNaN(p[0]) || isNaN(p[1]);
+                        });
+                        if (bad) return null;
+                        return {type: 'Polygon', pts: pts};
+                    }
+                    return null;
+                }
+                document.getElementById('aoi_wkt').addEventListener(
+                    'change', function() {
+                        var v = this.value.trim();
+                        if (!v) { clearPreview(); setAoiStatus('', false); return; }
+                        var parsed = parseWkt(v);
+                        if (!parsed) {
+                            setAoiStatus('Invalid WKT', true);
+                            return;
+                        }
+                        clearPreview();
+                        clearDrawnBox();
+                        if (parsed.type === 'Point') {
+                            previewLayer = L.marker([parsed.lat, parsed.lon]);
+                            previewLayer.addTo({{this._parent.get_name()}});
+                            {{this._parent.get_name()}}.setView(
+                                [parsed.lat, parsed.lon], 8
+                            );
+                        } else {
+                            previewLayer = L.polygon(parsed.pts, {
+                                color: '#059669', weight: 2, fillOpacity: 0.1
+                            });
+                            previewLayer.addTo({{this._parent.get_name()}});
+                            {{this._parent.get_name()}}.fitBounds(
+                                previewLayer.getBounds()
+                            );
+                        }
+                        setAoiStatus('WKT parsed OK', false);
+                    }
+                );
+
+                function renderPreviewGeoJson(geom, successMsg) {
+                    clearPreview();
+                    clearDrawnBox();
+                    previewLayer = L.geoJSON(geom, {style: {
+                        color: '#059669', weight: 2, fillOpacity: 0.1
+                    }});
+                    previewLayer.addTo({{this._parent.get_name()}});
+                    var b = previewLayer.getBounds();
+                    if (b.isValid()) {
+                        {{this._parent.get_name()}}.fitBounds(b);
+                    }
+                    setAoiStatus(successMsg, false);
+                }
+
+                function fetchAoiPreview(fetchInit, successMsg, errPrefix) {
+                    fetch('/aoi_preview', fetchInit)
+                        .then(function(r) {
+                            return r.json().then(function(body) {
+                                return {ok: r.ok, body: body};
+                            });
+                        })
+                        .then(function(resp) {
+                            if (!resp.ok) {
+                                setAoiStatus(
+                                    errPrefix + ': ' +
+                                    (resp.body.error || 'preview failed'),
+                                    true
+                                );
+                                return;
+                            }
+                            renderPreviewGeoJson(resp.body.geometry, successMsg);
+                        })
+                        .catch(function(e) {
+                            if (typeof console !== 'undefined' && console.error) {
+                                console.error(errPrefix, e);
+                            }
+                            setAoiStatus(
+                                errPrefix + ': ' + (e.name || 'Error') +
+                                ' — ' + (e.message || 'no details'),
+                                true
+                            );
+                        });
+                }
+
+                document.getElementById('aoi_url').addEventListener(
+                    'change', function() {
+                        var v = this.value.trim();
+                        if (!v) {
+                            clearPreview();
+                            setAoiStatus('', false);
+                            return;
+                        }
+                        if (!/^https:\/\//i.test(v)) {
+                            setAoiStatus('URL must start with https://', true);
+                            return;
+                        }
+                        setAoiStatus('Fetching preview…', false);
+                        fetchAoiPreview(
+                            {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    aoi: {kind: 'url', value: v}
+                                })
+                            },
+                            'URL preview loaded',
+                            'URL preview'
+                        );
+                    }
+                );
+
+                document.getElementById('aoi_file').addEventListener(
+                    'change', function() {
+                        uploadedFile = this.files[0] || null;
+                        if (!uploadedFile) {
+                            clearPreview();
+                            setAoiStatus('', false);
+                            return;
+                        }
+                        var name = uploadedFile.name.toLowerCase();
+                        if (name.endsWith('.geojson') || name.endsWith('.json')) {
+                            var reader = new FileReader();
+                            reader.onload = function(evt) {
+                                try {
+                                    var data = JSON.parse(evt.target.result);
+                                    clearPreview();
+                                    clearDrawnBox();
+                                    previewLayer = L.geoJSON(data, {style: {
+                                        color: '#059669',
+                                        weight: 2,
+                                        fillOpacity: 0.1
+                                    }});
+                                    previewLayer.addTo(
+                                        {{this._parent.get_name()}}
+                                    );
+                                    {{this._parent.get_name()}}.fitBounds(
+                                        previewLayer.getBounds()
+                                    );
+                                    setAoiStatus(
+                                        'File loaded: ' + uploadedFile.name, false
+                                    );
+                                } catch (err) {
+                                    setAoiStatus(
+                                        'Invalid GeoJSON: ' + err.message, true
+                                    );
+                                }
+                            };
+                            reader.readAsText(uploadedFile);
+                        } else if (name.endsWith('.kml')) {
+                            setAoiStatus(
+                                'Fetching KML preview…', false
+                            );
+                            var fd = new FormData();
+                            fd.append('payload_json', JSON.stringify({
+                                aoi: {kind: 'file', value: null}
+                            }));
+                            fd.append('aoi_file', uploadedFile);
+                            fetchAoiPreview(
+                                {method: 'POST', body: fd},
+                                'KML preview loaded: ' + uploadedFile.name,
+                                'KML preview'
+                            );
+                        } else {
+                            setAoiStatus('Unsupported file type', true);
+                        }
+                    }
+                );
+
+                // --- Submit Payload ---
+                function buildAoi() {
+                    var mode = currentAoiMode();
+                    if (mode === 'draw') {
+                        if (!currentBbox) {
+                            setAoiStatus(
+                                'Draw a rectangle, or switch input mode', true
+                            );
+                            return null;
+                        }
+                        return {kind: 'draw', value: currentBbox};
+                    }
+                    if (mode === 'coords') {
+                        var la1 = parseFloat(
+                            document.getElementById('aoi_lat_min').value
+                        );
+                        var la2 = parseFloat(
+                            document.getElementById('aoi_lat_max').value
+                        );
+                        var lo1 = parseFloat(
+                            document.getElementById('aoi_lon_min').value
+                        );
+                        var lo2 = parseFloat(
+                            document.getElementById('aoi_lon_max').value
+                        );
+                        if ([la1, la2, lo1, lo2].some(isNaN)) {
+                            setAoiStatus('Enter 4 numeric coordinates', true);
+                            return null;
+                        }
+                        return {kind: 'coords', value: {
+                            lat_min: la1, lat_max: la2,
+                            lon_min: lo1, lon_max: lo2
+                        }};
+                    }
+                    if (mode === 'wkt') {
+                        var w = document.getElementById('aoi_wkt').value.trim();
+                        if (!/^(POINT|POLYGON)/i.test(w)) {
+                            setAoiStatus(
+                                'WKT must start with POINT or POLYGON', true
+                            );
+                            return null;
+                        }
+                        return {kind: 'wkt', value: w};
+                    }
+                    if (mode === 'url') {
+                        var u = document.getElementById('aoi_url').value.trim();
+                        if (!/^https:\/\//i.test(u)) {
+                            setAoiStatus('URL must start with https://', true);
+                            return null;
+                        }
+                        return {kind: 'url', value: u};
+                    }
+                    if (mode === 'file') {
+                        if (!uploadedFile) {
+                            setAoiStatus('Choose a file', true);
+                            return null;
+                        }
+                        return {kind: 'file', value: null};
+                    }
+                    return null;
+                }
+
+                document.getElementById('action-btn').onclick = function() {
+                    var aoi = buildAoi();
+                    if (!aoi) return;
+
+                    var payload = {
+                        aoi: aoi,
                         search_type: getMultiValues('func-list', 'all'),
                         products: getMultiValues('prod-list', 'all'),
 
@@ -619,30 +1253,124 @@ def _generate_events_html_map(
                         opt_st: document.getElementById('opt_st').value
                     };
 
-                    fetch("/process_bbox", {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify(payload)
-                    }).then(r => r.json()).then(data => {
-                        if (data.run_id) {
-                            alert("Request submitted. Processing...");
-                            checkStatus(data.run_id);
-                        }
-                    }).catch(e => alert("Error: " + e.message));
+                    // Populate lat_min/… for draw & coords (backwards compat)
+                    if (aoi.kind === 'draw' || aoi.kind === 'coords') {
+                        payload.lat_min = aoi.value.lat_min;
+                        payload.lat_max = aoi.value.lat_max;
+                        payload.lon_min = aoi.value.lon_min;
+                        payload.lon_max = aoi.value.lon_max;
+                    }
+
+                    var request;
+                    if (aoi.kind === 'file') {
+                        var fd = new FormData();
+                        fd.append('payload_json', JSON.stringify(payload));
+                        fd.append('aoi_file', uploadedFile);
+                        request = fetch('/process_bbox', {
+                            method: 'POST', body: fd
+                        });
+                    } else {
+                        request = fetch('/process_bbox', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(payload)
+                        });
+                    }
+
+                    request
+                        .then(function(r) {
+                            return r.json().then(function(body) {
+                                return {ok: r.ok, body: body};
+                            });
+                        })
+                        .then(function(resp) {
+                            if (!resp.ok) {
+                                setAoiStatus(
+                                    resp.body.error || 'Request failed', true
+                                );
+                                return;
+                            }
+                            if (resp.body.run_id) {
+                                showProgressOverlay();
+                                checkStatus(resp.body.run_id);
+                            }
+                        })
+                        .catch(function(e) {
+                            setAoiStatus('Error: ' + e.message, true);
+                        });
                 };
+
+                // --- Progress overlay ------------------------------------
+                var progressStartTs = 0;
+
+                function showProgressOverlay() {
+                    var el = document.getElementById('progress-overlay');
+                    el.classList.add('visible');
+                    progressStartTs = Date.now();
+                    document.getElementById('progress-stage').textContent =
+                        'Starting…';
+                    document.getElementById('progress-count').textContent = '';
+                    document.getElementById('progress-elapsed').textContent =
+                        '00:00';
+                    var bar = document.getElementById('progress-bar-inner');
+                    bar.classList.add('indeterminate');
+                    bar.style.width = '';
+                }
+                function hideProgressOverlay() {
+                    document.getElementById('progress-overlay')
+                        .classList.remove('visible');
+                }
+                function pad2(n) { return (n < 10 ? '0' : '') + n; }
+                function fmtElapsed(secs) {
+                    secs = Math.max(0, Math.floor(secs));
+                    return pad2(Math.floor(secs / 60)) + ':' + pad2(secs % 60);
+                }
+                function renderProgress(status) {
+                    document.getElementById('progress-elapsed').textContent =
+                        fmtElapsed((Date.now() - progressStartTs) / 1000);
+                    document.getElementById('progress-stage').textContent =
+                        status.stage || 'Working…';
+                    var bar = document.getElementById('progress-bar-inner');
+                    var countEl = document.getElementById('progress-count');
+                    var p = status.progress;
+                    if (p && p.total > 0) {
+                        bar.classList.remove('indeterminate');
+                        var pct = Math.min(
+                            100, Math.round(100 * p.current / p.total)
+                        );
+                        bar.style.width = pct + '%';
+                        countEl.textContent =
+                            p.current + ' / ' + p.total +
+                            '  (' + pct + ' %)';
+                    } else {
+                        bar.classList.add('indeterminate');
+                        bar.style.width = '';
+                        countEl.textContent = '';
+                    }
+                }
 
                 function checkStatus(runId) {
                     var encId = encodeURIComponent(runId);
-                    fetch(`/processing_status?run_id=${encId}`)
-                        .then(r => r.json())
-                        .then(status => {
+                    fetch('/processing_status?run_id=' + encId)
+                        .then(function(r) { return r.json(); })
+                        .then(function(status) {
                             if (status.running) {
-                                setTimeout(() => checkStatus(runId), 2000);
+                                renderProgress(status);
+                                setTimeout(
+                                    function() { checkStatus(runId); }, 500
+                                );
                             } else if (status.error) {
-                                alert("Failed: " + status.error);
+                                hideProgressOverlay();
+                                alert('Failed: ' + status.error);
                             } else {
-                                window.location.href = `/show_maps?run_id=${encId}`;
+                                hideProgressOverlay();
+                                window.location.href =
+                                    '/show_maps?run_id=' + encId;
                             }
+                        })
+                        .catch(function(e) {
+                            hideProgressOverlay();
+                            alert('Status check failed: ' + e.message);
                         });
                 }
                 {% endmacro %}
@@ -793,12 +1521,16 @@ def _generate_events_html_map(
     folium.LayerControl(collapsed=False).add_to(map_object)
 
     draw = Draw(
+        # Folium otherwise binds an alert() of the raw GeoJSON to every shape
+        # it creates, which fires when clicking the placed point.
+        show_geometry_on_click=False,
         draw_options={
             "rectangle": True,
             "polygon": False,
             "circle": False,
-            "marker": False,
+            "marker": True,
             "polyline": False,
+            "circlemarker": False,
         },
         edit_options={"edit": True},
     )
@@ -959,9 +1691,13 @@ def _geometry_from_file(path: str | Path):
     path = Path(path)
     suffix = path.suffix.lower()
 
-    # # ---- KML ----
-    # if suffix == ".kml":
-    #     return create_polygon_from_kml(str(path))
+    # ---- KML ----
+    if suffix == ".kml":
+        # Reuse next_pass's KML parser (installed as top-level `utils.utils`).
+        # Lazy import so bare envs without next_pass can still import this module.
+        from utils.utils import create_polygon_from_kml
+
+        return create_polygon_from_kml(str(path))
 
     # ---- GeoJSON ----
     if suffix in (".geojson", ".json"):
@@ -983,11 +1719,21 @@ def _geometry_from_file(path: str | Path):
                 geometries = []
                 for zone_url in affected:
                     try:
-                        zone_data = requests.get(zone_url).json()
+                        _validate_remote_url(zone_url)
+                        resp = requests.get(zone_url, timeout=30)
+                        resp.raise_for_status()
+                        if len(resp.content) > MAX_GEOJSON_BYTES:
+                            raise ValueError(
+                                f"Response from {zone_url} exceeded max size "
+                                f"({MAX_GEOJSON_BYTES} bytes)"
+                            )
+                        zone_data = resp.json()
                         if zone_data.get("geometry"):
                             geometries.append(shape(zone_data["geometry"]))
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        log.debug(
+                            "affectedZones fetch failed for %s: %s", zone_url, exc
+                        )
 
                 if geometries:
                     return (
