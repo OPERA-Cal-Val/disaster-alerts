@@ -4,6 +4,7 @@ os.environ.setdefault("PANDAS_FUTURE_INFER_STRING", "0")
 
 import glob
 import html
+import io
 import json
 import logging
 import re
@@ -13,6 +14,7 @@ import sys
 import threading
 import time
 import uuid
+import zipfile
 from pathlib import Path
 
 from disasters.pipeline import (
@@ -22,7 +24,14 @@ from disasters.pipeline import (
     run_pipeline,
     run_search_only,
 )
-from flask import Flask, jsonify, render_template_string, request, send_from_directory
+from flask import (
+    Flask,
+    jsonify,
+    render_template_string,
+    request,
+    send_file,
+    send_from_directory,
+)
 
 print("Flask is running with Python:", sys.executable)
 logging.basicConfig(
@@ -1147,6 +1156,35 @@ def maps(run_id, filename):
     return f"File {filename} not found", 404
 
 
+# ---- Download the entire output folder for a run as a zip ----
+@app.route("/download/<run_id>")
+def download_run(run_id):
+    run_state = _get_run_state(run_id)
+    if run_state is None:
+        return f"Unknown run: {run_id}", 404
+
+    folder = run_state.get("latest_folder")
+    if not folder or not os.path.isdir(folder):
+        return f"No folder matched for run: {run_id}", 404
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for root, _, files in os.walk(folder):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, folder)
+                zf.write(file_path, arcname)
+    buffer.seek(0)
+
+    download_name = f"{os.path.basename(folder.rstrip(os.sep))}.zip"
+    return send_file(
+        buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=download_name,
+    )
+
+
 @app.route("/show_maps")
 def show_maps():
     """
@@ -1337,6 +1375,12 @@ def show_maps():
           body {{ display:flex; flex-direction: column; margin:0;
                   height:100vh; font-family:sans-serif;
                   background:#f3f4f6; }}
+          .toolbar {{ flex:0 0 auto; display:flex; justify-content:flex-end;
+                      padding:8px 15px; background:#1f2937; }}
+          .download-btn {{ color:#fff; background:#2563eb; border:none;
+                            padding:6px 14px; border-radius:4px; font-size:13px;
+                            text-decoration:none; cursor:pointer; }}
+          .download-btn:hover {{ background:#1d4ed8; }}
           pre {{ flex:0 0 25%; overflow:auto; padding:15px; margin:0;
                  background:#111; color:#10b981; font-size:12px;
                  border-bottom:2px solid #374151; }}
@@ -1346,6 +1390,11 @@ def show_maps():
         </style>
       </head>
       <body>
+        <div class="toolbar">
+          <a class="download-btn" href="/download/{run_id}" download>
+            Download Output Folder
+          </a>
+        </div>
         {log_html}
         <div class="maps-row">
             {iframes}
