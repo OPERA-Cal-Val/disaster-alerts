@@ -1196,6 +1196,8 @@ def show_maps():
     if run_state is None:
         return "<h3>No run selected. Start a dashboard search first.</h3>", 404
 
+    safe_run_id = html.escape(run_id or "", quote=True)
+
     folder = run_state.get("latest_folder")
     if run_state.get("running") and not folder:
         return (
@@ -1247,13 +1249,13 @@ def show_maps():
     iframes = ""
     if show_sat:
         rel_sat = os.path.relpath(sat_map_path, folder).replace(os.sep, "/")
-        iframes += f'<iframe src="/maps/{run_id}/{rel_sat}"></iframe>'
+        iframes += f'<iframe src="/maps/{safe_run_id}/{rel_sat}"></iframe>'
     if show_opera:
         rel_opera = os.path.relpath(opera_map_path, folder).replace(os.sep, "/")
-        iframes += f'<iframe src="/maps/{run_id}/{rel_opera}"></iframe>'
+        iframes += f'<iframe src="/maps/{safe_run_id}/{rel_opera}"></iframe>'
     if show_drcs:
         rel_drcs = os.path.relpath(drcs_map_path, folder).replace(os.sep, "/")
-        iframes += f'<iframe src="/maps/{run_id}/{rel_drcs}"></iframe>'
+        iframes += f'<iframe src="/maps/{safe_run_id}/{rel_drcs}"></iframe>'
 
     # Loop through and convert TIF files to PNG on-the-fly
     geotiff_viewer = ""
@@ -1275,7 +1277,7 @@ def show_maps():
 
                         rel_path = os.path.relpath(full_png_path, folder)
                         url_path = rel_path.replace(os.sep, "/")
-                        url = f"/maps/{run_id}/{url_path}"
+                        url = f"/maps/{safe_run_id}/{url_path}"
 
                         display_name = (
                             file.replace("_mosaic", "")
@@ -1401,7 +1403,7 @@ def show_maps():
       </head>
       <body>
         <div class="toolbar">
-          <a class="download-btn" href="/download/{run_id}" download>
+          <a class="download-btn" href="/download/{safe_run_id}" download>
             {download_label}
           </a>
         </div>
