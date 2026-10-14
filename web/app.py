@@ -1140,11 +1140,11 @@ def processing_status():
 def maps(run_id, filename):
     run_state = _get_run_state(run_id)
     if run_state is None:
-        return f"Unknown run: {run_id}", 404
+        return f"Unknown run: {html.escape(run_id or '')}", 404
 
     folder = run_state.get("latest_folder")
     if not folder:
-        return f"No folder matched for run: {run_id}", 404
+        return f"No folder matched for run: {html.escape(run_id or '')}", 404
 
     file_path = os.path.join(folder, filename)
 
@@ -1153,7 +1153,7 @@ def maps(run_id, filename):
         name = os.path.basename(file_path)
         return send_from_directory(directory, name)
 
-    return f"File {filename} not found", 404
+    return f"File {html.escape(filename)} not found", 404
 
 
 # ---- Download the entire output folder for a run as a zip ----
@@ -1161,11 +1161,11 @@ def maps(run_id, filename):
 def download_run(run_id):
     run_state = _get_run_state(run_id)
     if run_state is None:
-        return f"Unknown run: {run_id}", 404
+        return f"Unknown run: {html.escape(run_id or '')}", 404
 
     folder = run_state.get("latest_folder")
     if not folder or not os.path.isdir(folder):
-        return f"No folder matched for run: {run_id}", 404
+        return f"No folder matched for run: {html.escape(run_id or '')}", 404
 
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -1211,6 +1211,16 @@ def show_maps():
             "<h3>No output found for this search.</h3>",
             404,
         )
+
+    folder_basename = os.path.basename(folder.rstrip(os.sep))
+    if folder_basename.startswith("nextpass_outputs_"):
+        download_label = "Download Next-Pass Outputs"
+    elif folder_basename.startswith("search_outputs_"):
+        download_label = "Download Search Outputs"
+    elif folder_basename.startswith("disasters_outputs_"):
+        download_label = "Download Disaster Outputs"
+    else:
+        download_label = "Download Output Folder"
 
     log_file = os.path.join(folder, "run_output.txt")
     log_content = ""
@@ -1392,7 +1402,7 @@ def show_maps():
       <body>
         <div class="toolbar">
           <a class="download-btn" href="/download/{run_id}" download>
-            Download Output Folder
+            {download_label}
           </a>
         </div>
         {log_html}
