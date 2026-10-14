@@ -27,7 +27,6 @@ from disasters.pipeline import (
 from flask import (
     Flask,
     jsonify,
-    render_template_string,
     request,
     send_file,
     send_from_directory,
@@ -1146,14 +1145,7 @@ def maps(run_id, filename):
     if not folder:
         return f"No folder matched for run: {html.escape(run_id or '')}", 404
 
-    file_path = os.path.join(folder, filename)
-
-    if os.path.exists(file_path):
-        directory = os.path.dirname(file_path)
-        name = os.path.basename(file_path)
-        return send_from_directory(directory, name)
-
-    return f"File {html.escape(filename)} not found", 404
+    return send_from_directory(folder, filename)
 
 
 # ---- Download the entire output folder for a run as a zip ----
@@ -1415,8 +1407,8 @@ def show_maps():
       </body>
     </html>
     """
-    return render_template_string(page_html)
+    return page_html
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=os.environ.get("FLASK_DEBUG") == "1")
