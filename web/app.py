@@ -172,7 +172,7 @@ def _parse_aoi_from_request(req):
     return payload, aoi, uploaded
 
 
-def _aoi_to_bbox_and_geometry(aoi, run_dir):
+def _aoi_to_bbox_and_geometry(aoi, run_dir, upload_path=None):
     """Reduce any AOI kind to (bbox4, shapely_geometry).
 
     bbox4 = [lat_min, lat_max, lon_min, lon_max]. Zero-width or zero-height
@@ -197,7 +197,10 @@ def _aoi_to_bbox_and_geometry(aoi, run_dir):
     elif kind == "file":
         from disaster_alerts.plot_html_map import _geometry_from_file
 
-        geom = _geometry_from_file(aoi["value"])
+        # Only read the server-side saved upload, never a client-supplied path.
+        if upload_path is None:
+            raise _AoiError("file AOI requires an uploaded aoi_file part")
+        geom = _geometry_from_file(upload_path)
     else:
         raise _AoiError(f"Unknown aoi.kind={kind}")
 
@@ -971,6 +974,7 @@ def aoi_preview():
     ) as tmpdir:
         tmp_path = Path(tmpdir)
 
+        saved = None
         if aoi["kind"] == "file":
             safe = secure_filename(uploaded.filename) or "aoi_preview_upload"
             suffix = Path(safe).suffix.lower()
@@ -984,7 +988,7 @@ def aoi_preview():
             aoi["value"] = str(saved)
 
         try:
-            _bbox, geom = _aoi_to_bbox_and_geometry(aoi, tmp_path)
+            _bbox, geom = _aoi_to_bbox_and_geometry(aoi, tmp_path, upload_path=saved)
         except _AoiError as exc:
             return jsonify({"error": str(exc)}), exc.status
         except Exception:  # noqa: BLE001 - log details, keep response generic
@@ -1045,6 +1049,7 @@ def process_bbox():
     run_dir = Path(BASE_OUTPUT_DIR) / f"aoi_uploads_{run_id}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    saved_path = None
     if aoi["kind"] == "file":
         safe_name = secure_filename(uploaded.filename) or "aoi_upload"
         suffix = Path(safe_name).suffix.lower()
@@ -1058,7 +1063,7 @@ def process_bbox():
         aoi["value"] = str(saved_path)
 
     try:
-        bbox, _geom = _aoi_to_bbox_and_geometry(aoi, run_dir)
+        bbox, _geom = _aoi_to_bbox_and_geometry(aoi, run_dir, upload_path=saved_path)
     except _AoiError as exc:
         return jsonify({"error": str(exc)}), exc.status
     except Exception:  # noqa: BLE001 - log details, keep response generic
