@@ -4,6 +4,7 @@ os.environ.setdefault("PANDAS_FUTURE_INFER_STRING", "0")
 
 import glob
 import html
+import io
 import json
 import logging
 import re
@@ -13,6 +14,7 @@ import sys
 import threading
 import time
 import uuid
+import zipfile
 from pathlib import Path
 
 from disasters.pipeline import (
@@ -22,7 +24,13 @@ from disasters.pipeline import (
     run_pipeline,
     run_search_only,
 )
-from flask import Flask, jsonify, render_template_string, request, send_from_directory
+from flask import (
+    Flask,
+    jsonify,
+    request,
+    send_file,
+    send_from_directory,
+)
 
 print("Flask is running with Python:", sys.executable)
 logging.basicConfig(
@@ -164,7 +172,7 @@ def _parse_aoi_from_request(req):
     return payload, aoi, uploaded
 
 
-def _aoi_to_bbox_and_geometry(aoi, run_dir):
+def _aoi_to_bbox_and_geometry(aoi, run_dir, upload_path=None):
     """Reduce any AOI kind to (bbox4, shapely_geometry).
 
     bbox4 = [lat_min, lat_max, lon_min, lon_max]. Zero-width or zero-height
@@ -189,7 +197,10 @@ def _aoi_to_bbox_and_geometry(aoi, run_dir):
     elif kind == "file":
         from disaster_alerts.plot_html_map import _geometry_from_file
 
-        geom = _geometry_from_file(aoi["value"])
+        # Only read the server-side saved upload, never a client-supplied path.
+        if upload_path is None:
+            raise _AoiError("file AOI requires an uploaded aoi_file part")
+        geom = _geometry_from_file(upload_path)
     else:
         raise _AoiError(f"Unknown aoi.kind={kind}")
 
@@ -963,6 +974,7 @@ def aoi_preview():
     ) as tmpdir:
         tmp_path = Path(tmpdir)
 
+        saved = None
         if aoi["kind"] == "file":
             safe = secure_filename(uploaded.filename) or "aoi_preview_upload"
             suffix = Path(safe).suffix.lower()
@@ -976,7 +988,7 @@ def aoi_preview():
             aoi["value"] = str(saved)
 
         try:
-            _bbox, geom = _aoi_to_bbox_and_geometry(aoi, tmp_path)
+            _bbox, geom = _aoi_to_bbox_and_geometry(aoi, tmp_path, upload_path=saved)
         except _AoiError as exc:
             return jsonify({"error": str(exc)}), exc.status
         except Exception:  # noqa: BLE001 - log details, keep response generic
@@ -1037,6 +1049,7 @@ def process_bbox():
     run_dir = Path(BASE_OUTPUT_DIR) / f"aoi_uploads_{run_id}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    saved_path = None
     if aoi["kind"] == "file":
         safe_name = secure_filename(uploaded.filename) or "aoi_upload"
         suffix = Path(safe_name).suffix.lower()
@@ -1050,7 +1063,7 @@ def process_bbox():
         aoi["value"] = str(saved_path)
 
     try:
-        bbox, _geom = _aoi_to_bbox_and_geometry(aoi, run_dir)
+        bbox, _geom = _aoi_to_bbox_and_geometry(aoi, run_dir, upload_path=saved_path)
     except _AoiError as exc:
         return jsonify({"error": str(exc)}), exc.status
     except Exception:  # noqa: BLE001 - log details, keep response generic
@@ -1131,20 +1144,42 @@ def processing_status():
 def maps(run_id, filename):
     run_state = _get_run_state(run_id)
     if run_state is None:
-        return f"Unknown run: {run_id}", 404
+        return f"Unknown run: {html.escape(run_id or '')}", 404
 
     folder = run_state.get("latest_folder")
     if not folder:
-        return f"No folder matched for run: {run_id}", 404
+        return f"No folder matched for run: {html.escape(run_id or '')}", 404
 
-    file_path = os.path.join(folder, filename)
+    return send_from_directory(folder, filename)
 
-    if os.path.exists(file_path):
-        directory = os.path.dirname(file_path)
-        name = os.path.basename(file_path)
-        return send_from_directory(directory, name)
 
-    return f"File {filename} not found", 404
+# ---- Download the entire output folder for a run as a zip ----
+@app.route("/download/<run_id>")
+def download_run(run_id):
+    run_state = _get_run_state(run_id)
+    if run_state is None:
+        return f"Unknown run: {html.escape(run_id or '')}", 404
+
+    folder = run_state.get("latest_folder")
+    if not folder or not os.path.isdir(folder):
+        return f"No folder matched for run: {html.escape(run_id or '')}", 404
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for root, _, files in os.walk(folder):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, folder)
+                zf.write(file_path, arcname)
+    buffer.seek(0)
+
+    download_name = f"{os.path.basename(folder.rstrip(os.sep))}.zip"
+    return send_file(
+        buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=download_name,
+    )
 
 
 @app.route("/show_maps")
@@ -1157,6 +1192,8 @@ def show_maps():
     run_state = _get_run_state(run_id)
     if run_state is None:
         return "<h3>No run selected. Start a dashboard search first.</h3>", 404
+
+    safe_run_id = html.escape(run_id or "", quote=True)
 
     folder = run_state.get("latest_folder")
     if run_state.get("running") and not folder:
@@ -1173,6 +1210,16 @@ def show_maps():
             "<h3>No output found for this search.</h3>",
             404,
         )
+
+    folder_basename = os.path.basename(folder.rstrip(os.sep))
+    if folder_basename.startswith("nextpass_outputs_"):
+        download_label = "Download Next-Pass Outputs"
+    elif folder_basename.startswith("search_outputs_"):
+        download_label = "Download Search Outputs"
+    elif folder_basename.startswith("disasters_outputs_"):
+        download_label = "Download Disaster Outputs"
+    else:
+        download_label = "Download Output Folder"
 
     log_file = os.path.join(folder, "run_output.txt")
     log_content = ""
@@ -1199,13 +1246,13 @@ def show_maps():
     iframes = ""
     if show_sat:
         rel_sat = os.path.relpath(sat_map_path, folder).replace(os.sep, "/")
-        iframes += f'<iframe src="/maps/{run_id}/{rel_sat}"></iframe>'
+        iframes += f'<iframe src="/maps/{safe_run_id}/{rel_sat}"></iframe>'
     if show_opera:
         rel_opera = os.path.relpath(opera_map_path, folder).replace(os.sep, "/")
-        iframes += f'<iframe src="/maps/{run_id}/{rel_opera}"></iframe>'
+        iframes += f'<iframe src="/maps/{safe_run_id}/{rel_opera}"></iframe>'
     if show_drcs:
         rel_drcs = os.path.relpath(drcs_map_path, folder).replace(os.sep, "/")
-        iframes += f'<iframe src="/maps/{run_id}/{rel_drcs}"></iframe>'
+        iframes += f'<iframe src="/maps/{safe_run_id}/{rel_drcs}"></iframe>'
 
     # Loop through and convert TIF files to PNG on-the-fly
     geotiff_viewer = ""
@@ -1227,7 +1274,7 @@ def show_maps():
 
                         rel_path = os.path.relpath(full_png_path, folder)
                         url_path = rel_path.replace(os.sep, "/")
-                        url = f"/maps/{run_id}/{url_path}"
+                        url = f"/maps/{safe_run_id}/{url_path}"
 
                         display_name = (
                             file.replace("_mosaic", "")
@@ -1337,6 +1384,12 @@ def show_maps():
           body {{ display:flex; flex-direction: column; margin:0;
                   height:100vh; font-family:sans-serif;
                   background:#f3f4f6; }}
+          .toolbar {{ flex:0 0 auto; display:flex; justify-content:flex-end;
+                      padding:8px 15px; background:#1f2937; }}
+          .download-btn {{ color:#fff; background:#2563eb; border:none;
+                            padding:6px 14px; border-radius:4px; font-size:13px;
+                            text-decoration:none; cursor:pointer; }}
+          .download-btn:hover {{ background:#1d4ed8; }}
           pre {{ flex:0 0 25%; overflow:auto; padding:15px; margin:0;
                  background:#111; color:#10b981; font-size:12px;
                  border-bottom:2px solid #374151; }}
@@ -1346,6 +1399,11 @@ def show_maps():
         </style>
       </head>
       <body>
+        <div class="toolbar">
+          <a class="download-btn" href="/download/{safe_run_id}" download>
+            {download_label}
+          </a>
+        </div>
         {log_html}
         <div class="maps-row">
             {iframes}
@@ -1354,8 +1412,8 @@ def show_maps():
       </body>
     </html>
     """
-    return render_template_string(page_html)
+    return page_html
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=os.environ.get("FLASK_DEBUG") == "1")

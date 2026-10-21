@@ -1,0 +1,1503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPERA Disaster Alerts</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='108.8 46.8 145 145'%3E%3Cpath fill='%23303030' d='M223.5,76.26l.89.87A60.52,60.52,0,0,1,241,107.67c1.47.72,2.94,1.43,4.43,2.11q3.88,1.84,7.77,3.65A71.92,71.92,0,0,0,233.6,70.5c-1.19.77-2.4,1.52-3.61,2.24C227.88,74,225.72,75.16,223.5,76.26Z'/%3E%3Cpath fill='%23303030' d='M132.6,83.44a148.57,148.57,0,0,0-17.73,8.3,71.88,71.88,0,0,0-5.71,24c4.08-2.34,8.17-4.72,12.18-7.08A60.42,60.42,0,0,1,132.6,83.44Z'/%3E%3Cpath fill='%23303030' d='M181.25,59.26A60.53,60.53,0,0,1,218.1,71.64a64.55,64.55,0,0,0,9.27-7A72.26,72.26,0,0,0,120.45,81.25a130.33,130.33,0,0,1,18.42-4.86A60.6,60.6,0,0,1,181.25,59.26Z'/%3E%3Cpath fill='%23303030' d='M120.24,120.27q0-1.42.06-2.85c-1.72,1.19-3.27,2.26-4.3,3-2.28,1.59-4.55,3.18-6.82,4.79a71.85,71.85,0,0,0,7.56,27.6q4.64-3.3,9.2-6.7A60.84,60.84,0,0,1,120.24,120.27Z'/%3E%3Cpath fill='%23303030' d='M242.12,116.14c.09,1.37.14,2.75.14,4.13a60.8,60.8,0,0,1-5.7,25.82q4.58,3.39,9.21,6.71a72,72,0,0,0,7.66-29.59Q247.82,119.61,242.12,116.14Z'/%3E%3Cpath fill='%23303030' d='M224.39,163.42a61.22,61.22,0,0,1-15.18,11.11q3.09,4.71,6.3,9.36a72.65,72.65,0,0,0,26-23.75q-4.09-4-8.24-7.92A61.44,61.44,0,0,1,224.39,163.42Z'/%3E%3Cpath fill='%23303030' d='M138.11,163.42a61.51,61.51,0,0,1-8.87-11.21q-4.14,3.93-8.24,7.93a72.68,72.68,0,0,0,26,23.75q3.19-4.65,6.3-9.35A61.12,61.12,0,0,1,138.11,163.42Z'/%3E%3Cpath fill='%23303030' d='M181.25,181.29a61.17,61.17,0,0,1-22.18-4.14q-2.55,5-5,10.07a72.48,72.48,0,0,0,54.39,0q-2.46-5.06-5-10.06A60.87,60.87,0,0,1,181.25,181.29Z'/%3E%3Cpath fill='%23a0dbf7' d='M218.68,78.46c-10.79,4.55-22.55,6.86-34.15,4.61-3.91-.74-8.23-1.63-12.18-2.2s-8.26-1.08-12.21-1.33a68.81,68.81,0,0,0-18.8,1.27,56.16,56.16,0,0,0-14.17,24.4l.73-.44c26.08-12.25,57.29-13.52,85.17-7.56a109,109,0,0,1,16.7,5.22c1.87.78,3.68,1.61,5.47,2.46A56,56,0,0,0,218.68,78.46Z'/%3E%3Cpath fill='%2399d4c3' d='M130.83,110.18c-1,.73-3.06,2.12-5.34,3.68A56.15,56.15,0,0,0,130,143.1c7.64-5.73,15.16-11.6,22.65-17.53,1.37-1.11,4.75-3.78,6.06-4.85a35.94,35.94,0,0,1,43-1.63c1.3.87,3,2.27,4.18,3.25,8.81,7,17.68,14,26.69,20.76a55.94,55.94,0,0,0,4.84-22.83,56.62,56.62,0,0,0-.47-7.29q-2.92-1.74-5.85-3.45C203,93.82,158.66,94,130.83,110.18Z'/%3E%3Cpath fill='%231dbcb9' d='M201.48,123.57a30.53,30.53,0,0,0-40.46,0c-1.28,1.1-4.54,4-5.85,5.11-7.51,6.62-14.95,13.29-22.27,20.11A56.31,56.31,0,0,0,156,170.41c7.53-11.62,14.68-23.48,21.68-35.39a4.17,4.17,0,0,1,7.37.34c.16.29.65,1.1.82,1.4,1.36,2.35,5.14,8.67,6.59,11.09,4.6,7.58,9.26,15.12,14.07,22.55a56.36,56.36,0,0,0,23.08-21.61c-7.32-6.82-14.76-13.5-22.28-20.12C206,127.51,202.76,124.67,201.48,123.57Z'/%3E%3Cpath fill='%2352afe3' d='M156.19,75.44A183.55,183.55,0,0,1,177,77.82c3.87.61,8.23,1.57,12.12,1.83a48,48,0,0,0,24.25-5.38,56.13,56.13,0,0,0-65.93,1.18Q151.85,75.22,156.19,75.44Z'/%3E%3Cpath fill='%23027d7c' d='M182.45,138.73l-1-1.76a.21.21,0,0,0-.36,0c-1.93,3.3-5.49,9.59-7.4,13-4.21,7.56-8.35,15.14-12.34,22.8a56.3,56.3,0,0,0,39.83,0c-1.34-2.57-2.7-5.14-4.06-7.7C192.5,156.44,187.34,147.22,182.45,138.73Z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+<style>
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --plane: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --hairline: #e1e0d9;
+  --border: rgba(11, 11, 11, 0.10);
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --l8: #1baf7a;
+  --l9: #eda100;
+  --nisar: #e87ba4;
+  --err: #b42318;
+  --ok: #1baf7a;
+  --logo-ink: #303030;
+  --logo-plate: rgba(252, 252, 251, 0.88);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: #1a1a19;
+    --plane: #0d0d0d;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --hairline: #2c2c2a;
+    --border: rgba(255, 255, 255, 0.10);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --l8: #199e70;
+    --l9: #c98500;
+    --nisar: #d55181;
+    --err: #f97066;
+    --ok: #3ccf95;
+    --logo-ink: #eeede7;
+    --logo-plate: rgba(26, 26, 25, 0.85);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--plane);
+  color: var(--ink);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+header h1 { font-size: 20px; font-weight: 650; margin: 0; letter-spacing: -0.005em; }
+header h1 .opera { letter-spacing: 0.06em; }
+header .brand-mark { height: 28px; width: 28px; flex: none; display: block; }
+header .tag { color: var(--ink-2); font-size: 12.5px; }
+header .sub { color: var(--muted); font-size: 12.5px; margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.dot.live { background: var(--ok); }
+.dot.err { background: var(--err); }
+.op-1 { fill: var(--logo-ink); }
+.op-2 { fill: #a0dbf7; }
+.op-3 { fill: #99d4c3; }
+.op-4 { fill: #1dbcb9; }
+.op-5 { fill: #52afe3; }
+.op-6 { fill: #027d7c; }
+main { flex: 1; display: flex; min-height: 0; }
+#sidebar {
+  width: 420px;
+  flex: none;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+#drag { flex: none; width: 5px; cursor: col-resize; background: var(--hairline); }
+#drag:hover, #drag.dragging { background: var(--muted); }
+#map-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#map-area { flex: 1; min-height: 0; position: relative; display: flex; }
+#map { flex: 1; min-width: 0; }
+#brand-logo {
+  position: absolute;
+  right: 20px;
+  bottom: 40px;
+  z-index: 800;
+  display: block;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--logo-plate);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+#brand-logo:hover { border-color: var(--muted); }
+#brand-logo svg { display: block; height: 76px; width: auto; }
+section { padding: 12px 16px; border-bottom: 1px solid var(--hairline); }
+section h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.hazard-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
+.hazard-row .n { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); flex: none; }
+.chip.round { border-radius: 50%; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row label { display: flex; gap: 6px; align-items: center; }
+.coords { display: flex; gap: 8px; margin-top: 8px; }
+select, .coords input {
+  padding: 5px 6px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--plane);
+  color: var(--ink);
+  font: inherit;
+}
+.coords input { flex: 1; min-width: 0; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+button, a.button {
+  font: inherit;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--hairline);
+  background: var(--plane);
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+button:hover, a.button:hover { border-color: var(--muted); }
+button:disabled { opacity: 0.45; cursor: default; border-color: var(--hairline); }
+button.active { border-color: var(--ink-2); background: var(--surface); font-weight: 600; }
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.list-head h2 { margin: 0; }
+.list-head button { padding: 3px 10px; font-size: 12.5px; }
+#status { color: var(--ink-2); font-size: 12.5px; }
+#results { flex: 1; overflow-y: auto; padding: 6px 8px; }
+.event {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.event:hover { background: var(--plane); }
+.event.sel { background: var(--plane); outline: 1px solid var(--muted); }
+.event .chip { align-self: center; }
+.event .what { flex: 1; min-width: 0; }
+.event .when { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.event .sub { flex-basis: 100%; margin-left: 20px; color: var(--ink-2); font-size: 12.5px; }
+.event .detail {
+  display: none;
+  flex-basis: 100%;
+  margin: 4px 0 0 20px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.event.sel .detail { display: block; }
+.detail dt { display: inline; text-transform: uppercase; letter-spacing: 0.05em; font-size: 10.5px; }
+.detail dd { display: inline; margin: 0 0 0 4px; color: var(--ink-2); }
+.detail div + div { margin-top: 1px; }
+.detail .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.detail .actions button, .detail .actions a.button { padding: 3px 9px; font-size: 12px; }
+.detail details { margin-top: 4px; }
+.detail details p { white-space: pre-wrap; margin: 4px 0; color: var(--ink-2); }
+.group-head {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 10px 8px 2px;
+}
+.note { color: var(--muted); font-size: 12px; margin-top: 6px; }
+#aoi-msg { color: var(--ink-2); }
+#aoi-msg.err { color: var(--err); }
+#empty { padding: 24px 16px; color: var(--ink-2); }
+.popup { font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 320px; }
+.popup b { display: block; margin-bottom: 2px; }
+#passes {
+  flex: none;
+  max-height: 38%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-top: 1px solid var(--hairline);
+}
+#passes[hidden], [hidden] { display: none !important; }
+#passes-head { display: flex; align-items: baseline; gap: 10px; padding: 8px 12px 6px 16px; flex-wrap: wrap; }
+#passes-head h2 { margin: 0; }
+#passes-head .note { margin: 0; }
+#passes-head .spacer { margin-left: auto; }
+#passes-head button, #passes-head a.button { padding: 2px 10px; font-size: 12px; }
+#passes-body { overflow-y: auto; padding: 0 8px 8px; }
+#passes table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+#passes th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 8px; position: sticky; top: 0; background: var(--surface); }
+#passes td { padding: 3px 8px; border-top: 1px solid var(--hairline); }
+#passes tr.pass { cursor: pointer; }
+#passes tr.pass:hover td, #passes tr.pass.sel td { background: var(--plane); }
+#passes .sensor { display: flex; align-items: center; gap: 6px; }
+@media (prefers-color-scheme: dark) {
+  .leaflet-tile.street {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+  }
+  .leaflet-container { background: #0d0d0d; }
+}
+@media (max-width: 720px) {
+  main { flex-direction: column; }
+  #sidebar { width: 100% !important; max-height: 45%; }
+  #drag { display: none; }
+  #brand-logo svg { height: 46px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <svg class="brand-mark" viewBox="108.8 46.8 145 145" role="img" aria-label="OPERA"><path class="op-1" d="M223.5,76.26l.89.87A60.52,60.52,0,0,1,241,107.67c1.47.72,2.94,1.43,4.43,2.11q3.88,1.84,7.77,3.65A71.92,71.92,0,0,0,233.6,70.5c-1.19.77-2.4,1.52-3.61,2.24C227.88,74,225.72,75.16,223.5,76.26Z"/><path class="op-1" d="M132.6,83.44a148.57,148.57,0,0,0-17.73,8.3,71.88,71.88,0,0,0-5.71,24c4.08-2.34,8.17-4.72,12.18-7.08A60.42,60.42,0,0,1,132.6,83.44Z"/><path class="op-1" d="M181.25,59.26A60.53,60.53,0,0,1,218.1,71.64a64.55,64.55,0,0,0,9.27-7A72.26,72.26,0,0,0,120.45,81.25a130.33,130.33,0,0,1,18.42-4.86A60.6,60.6,0,0,1,181.25,59.26Z"/><path class="op-1" d="M120.24,120.27q0-1.42.06-2.85c-1.72,1.19-3.27,2.26-4.3,3-2.28,1.59-4.55,3.18-6.82,4.79a71.85,71.85,0,0,0,7.56,27.6q4.64-3.3,9.2-6.7A60.84,60.84,0,0,1,120.24,120.27Z"/><path class="op-1" d="M242.12,116.14c.09,1.37.14,2.75.14,4.13a60.8,60.8,0,0,1-5.7,25.82q4.58,3.39,9.21,6.71a72,72,0,0,0,7.66-29.59Q247.82,119.61,242.12,116.14Z"/><path class="op-1" d="M224.39,163.42a61.22,61.22,0,0,1-15.18,11.11q3.09,4.71,6.3,9.36a72.65,72.65,0,0,0,26-23.75q-4.09-4-8.24-7.92A61.44,61.44,0,0,1,224.39,163.42Z"/><path class="op-1" d="M138.11,163.42a61.51,61.51,0,0,1-8.87-11.21q-4.14,3.93-8.24,7.93a72.68,72.68,0,0,0,26,23.75q3.19-4.65,6.3-9.35A61.12,61.12,0,0,1,138.11,163.42Z"/><path class="op-1" d="M181.25,181.29a61.17,61.17,0,0,1-22.18-4.14q-2.55,5-5,10.07a72.48,72.48,0,0,0,54.39,0q-2.46-5.06-5-10.06A60.87,60.87,0,0,1,181.25,181.29Z"/><path class="op-2" d="M218.68,78.46c-10.79,4.55-22.55,6.86-34.15,4.61-3.91-.74-8.23-1.63-12.18-2.2s-8.26-1.08-12.21-1.33a68.81,68.81,0,0,0-18.8,1.27,56.16,56.16,0,0,0-14.17,24.4l.73-.44c26.08-12.25,57.29-13.52,85.17-7.56a109,109,0,0,1,16.7,5.22c1.87.78,3.68,1.61,5.47,2.46A56,56,0,0,0,218.68,78.46Z"/><path class="op-3" d="M130.83,110.18c-1,.73-3.06,2.12-5.34,3.68A56.15,56.15,0,0,0,130,143.1c7.64-5.73,15.16-11.6,22.65-17.53,1.37-1.11,4.75-3.78,6.06-4.85a35.94,35.94,0,0,1,43-1.63c1.3.87,3,2.27,4.18,3.25,8.81,7,17.68,14,26.69,20.76a55.94,55.94,0,0,0,4.84-22.83,56.62,56.62,0,0,0-.47-7.29q-2.92-1.74-5.85-3.45C203,93.82,158.66,94,130.83,110.18Z"/><path class="op-4" d="M201.48,123.57a30.53,30.53,0,0,0-40.46,0c-1.28,1.1-4.54,4-5.85,5.11-7.51,6.62-14.95,13.29-22.27,20.11A56.31,56.31,0,0,0,156,170.41c7.53-11.62,14.68-23.48,21.68-35.39a4.17,4.17,0,0,1,7.37.34c.16.29.65,1.1.82,1.4,1.36,2.35,5.14,8.67,6.59,11.09,4.6,7.58,9.26,15.12,14.07,22.55a56.36,56.36,0,0,0,23.08-21.61c-7.32-6.82-14.76-13.5-22.28-20.12C206,127.51,202.76,124.67,201.48,123.57Z"/><path class="op-5" d="M156.19,75.44A183.55,183.55,0,0,1,177,77.82c3.87.61,8.23,1.57,12.12,1.83a48,48,0,0,0,24.25-5.38,56.13,56.13,0,0,0-65.93,1.18Q151.85,75.22,156.19,75.44Z"/><path class="op-6" d="M182.45,138.73l-1-1.76a.21.21,0,0,0-.36,0c-1.93,3.3-5.49,9.59-7.4,13-4.21,7.56-8.35,15.14-12.34,22.8a56.3,56.3,0,0,0,39.83,0c-1.34-2.57-2.7-5.14-4.06-7.7C192.5,156.44,187.34,147.22,182.45,138.73Z"/></svg>
+  <h1><span class="opera">OPERA</span> Disaster Alerts</h1>
+  <span class="tag">active NWS warnings &amp; USGS earthquakes</span>
+  <span class="sub"><span class="dot" id="live-dot"></span><span id="meta">loading…</span></span>
+</header>
+<main>
+  <div id="sidebar">
+    <section>
+      <h2>Hazards</h2>
+      <div id="hazards"></div>
+    </section>
+    <section>
+      <h2>Filters</h2>
+      <div class="row">
+        <label>Min severity
+          <select id="min-severity">
+            <option value="0">Any</option>
+            <option value="2">Moderate+</option>
+            <option value="3">Severe / Strong+</option>
+            <option value="4">Extreme / Major+</option>
+          </select>
+        </label>
+        <label>Quakes from
+          <select id="quake-days">
+            <option value="1">last 24 h</option>
+            <option value="3">last 3 days</option>
+            <option value="7" selected>last 7 days</option>
+          </select>
+        </label>
+      </div>
+      <div class="row" style="margin-top: 8px">
+        <label><input type="checkbox" id="live" checked> Live refresh every 5 min</label>
+        <button id="refresh-now" title="Fetch the latest NWS and USGS feeds now">Refresh now</button>
+      </div>
+      <div class="note" id="filters-note"></div>
+    </section>
+    <section>
+      <h2>Area of interest</h2>
+      <div class="btns">
+        <button id="draw-box">Draw box</button>
+        <button id="draw-polygon">Draw polygon</button>
+        <button id="upload-aoi" title="GeoJSON, KML, or KMZ">Upload file…</button>
+        <button id="clear-aoi">Clear</button>
+      </div>
+      <input type="file" id="aoi-file" accept=".geojson,.json,.kml,.kmz" hidden>
+      <form id="coord-form" class="coords">
+        <input id="coord-input" type="text" spellcheck="false" autocomplete="off"
+               placeholder="lat_min lat_max lon_min lon_max"
+               aria-label="Bounding box: lat_min lat_max lon_min lon_max">
+        <button type="submit">Go</button>
+      </form>
+      <div id="aoi-msg" class="note" role="status" hidden></div>
+      <div class="note">Optional: limit the list to events that touch an area. Select an event to see upcoming satellite passes over it.</div>
+    </section>
+    <section class="list-head">
+      <h2>Events <span id="status"></span></h2>
+      <button id="copy-link" title="Copy a link that reopens this view (hazards, filters, area, selected event)">Copy link</button>
+    </section>
+    <div id="results"><div id="empty">Loading events…</div></div>
+  </div>
+  <div id="drag" title="Drag to resize"></div>
+  <div id="map-wrap">
+    <div id="map-area">
+      <div id="map"></div>
+      <a id="brand-logo" href="https://www.jpl.nasa.gov/go/opera" target="_blank" rel="noopener"
+         title="OPERA — Observational Products for End-Users from Remote sensing Analysis">
+        <svg viewBox="0 0 362.58 312.14" role="img" aria-label="OPERA"><path class="op-1" d="M48,247.57v-14.9c0-10.2,4.83-16.6,16.12-16.6H81.65c11.29,0,16.12,6.4,16.12,16.6v14.9c0,10.14-4.83,16.54-16.12,16.54H64.16C52.87,264.11,48,257.71,48,247.57Zm33.61,7.49c4.56,0,6.66-1.29,6.66-7.15V232.33c0-5.92-1.9-7.21-6.66-7.21H64.16c-4.69,0-6.67,1.29-6.67,7.21v15.58c0,5.86,2.11,7.15,6.67,7.15Z"/><path class="op-1" d="M105.78,262.41V217.77a1.54,1.54,0,0,1,1.7-1.7h24.7c13.88,0,18.71,5.85,18.71,17.22v1.49c0,11-4.83,16.95-18.71,16.95h-17v10.68a1.54,1.54,0,0,1-1.7,1.7h-6A1.54,1.54,0,0,1,105.78,262.41Zm25.65-19.67c7,0,10-1.49,10-8v-1.43c0-6.88-2.86-8.17-10-8.17h-16.2v17.62Z"/><path class="op-1" d="M158.89,262.41V217.77a1.54,1.54,0,0,1,1.7-1.7h37.22a1.54,1.54,0,0,1,1.7,1.7v5.65a1.54,1.54,0,0,1-1.7,1.7H168.28V235.6H187.4a1.54,1.54,0,0,1,1.7,1.7v5a1.54,1.54,0,0,1-1.7,1.7H168.28v11.09h29.53a1.54,1.54,0,0,1,1.7,1.7v5.65a1.54,1.54,0,0,1-1.7,1.7H160.59A1.54,1.54,0,0,1,158.89,262.41Z"/><path class="op-1" d="M243.24,250.57l8.09,11.5c.82,1.15.28,2-1.08,2h-7.08a2.26,2.26,0,0,1-2-1.09l-7.42-11.5H217v10.89a1.54,1.54,0,0,1-1.7,1.7h-6.05a1.54,1.54,0,0,1-1.7-1.7V217.77a1.54,1.54,0,0,1,1.7-1.7h24.7c14,0,19.25,5.85,19.25,17.35v1C253.17,242.74,250.52,248.39,243.24,250.57Zm.41-17.08c0-7.08-3.07-8.37-10.48-8.37H217v17.42h16.2c7.28,0,10.48-1.23,10.48-8.17Z"/><path class="op-1" d="M304.13,262.81l-3.19-7H273.45l-3.27,7a2.17,2.17,0,0,1-2,1.3h-6.87c-1.29,0-1.84-.82-1.29-2l21.63-44.84a2,2,0,0,1,2-1.23h7.21a2,2,0,0,1,2,1.23l21.57,44.84c.54,1.15,0,2-1.29,2h-6.88A2.07,2.07,0,0,1,304.13,262.81Zm-6.73-14.76-10.14-22.11L277,248.05Z"/><path class="op-1" d="M223.5,76.26l.89.87A60.52,60.52,0,0,1,241,107.67c1.47.72,2.94,1.43,4.43,2.11q3.88,1.84,7.77,3.65A71.92,71.92,0,0,0,233.6,70.5c-1.19.77-2.4,1.52-3.61,2.24C227.88,74,225.72,75.16,223.5,76.26Z"/><path class="op-1" d="M132.6,83.44a148.57,148.57,0,0,0-17.73,8.3,71.88,71.88,0,0,0-5.71,24c4.08-2.34,8.17-4.72,12.18-7.08A60.42,60.42,0,0,1,132.6,83.44Z"/><path class="op-1" d="M181.25,59.26A60.53,60.53,0,0,1,218.1,71.64a64.55,64.55,0,0,0,9.27-7A72.26,72.26,0,0,0,120.45,81.25a130.33,130.33,0,0,1,18.42-4.86A60.6,60.6,0,0,1,181.25,59.26Z"/><path class="op-1" d="M120.24,120.27q0-1.42.06-2.85c-1.72,1.19-3.27,2.26-4.3,3-2.28,1.59-4.55,3.18-6.82,4.79a71.85,71.85,0,0,0,7.56,27.6q4.64-3.3,9.2-6.7A60.84,60.84,0,0,1,120.24,120.27Z"/><path class="op-1" d="M242.12,116.14c.09,1.37.14,2.75.14,4.13a60.8,60.8,0,0,1-5.7,25.82q4.58,3.39,9.21,6.71a72,72,0,0,0,7.66-29.59Q247.82,119.61,242.12,116.14Z"/><path class="op-1" d="M224.39,163.42a61.22,61.22,0,0,1-15.18,11.11q3.09,4.71,6.3,9.36a72.65,72.65,0,0,0,26-23.75q-4.09-4-8.24-7.92A61.44,61.44,0,0,1,224.39,163.42Z"/><path class="op-1" d="M138.11,163.42a61.51,61.51,0,0,1-8.87-11.21q-4.14,3.93-8.24,7.93a72.68,72.68,0,0,0,26,23.75q3.19-4.65,6.3-9.35A61.12,61.12,0,0,1,138.11,163.42Z"/><path class="op-1" d="M181.25,181.29a61.17,61.17,0,0,1-22.18-4.14q-2.55,5-5,10.07a72.48,72.48,0,0,0,54.39,0q-2.46-5.06-5-10.06A60.87,60.87,0,0,1,181.25,181.29Z"/><path class="op-2" d="M218.68,78.46c-10.79,4.55-22.55,6.86-34.15,4.61-3.91-.74-8.23-1.63-12.18-2.2s-8.26-1.08-12.21-1.33a68.81,68.81,0,0,0-18.8,1.27,56.16,56.16,0,0,0-14.17,24.4l.73-.44c26.08-12.25,57.29-13.52,85.17-7.56a109,109,0,0,1,16.7,5.22c1.87.78,3.68,1.61,5.47,2.46A56,56,0,0,0,218.68,78.46Z"/><path class="op-3" d="M130.83,110.18c-1,.73-3.06,2.12-5.34,3.68A56.15,56.15,0,0,0,130,143.1c7.64-5.73,15.16-11.6,22.65-17.53,1.37-1.11,4.75-3.78,6.06-4.85a35.94,35.94,0,0,1,43-1.63c1.3.87,3,2.27,4.18,3.25,8.81,7,17.68,14,26.69,20.76a55.94,55.94,0,0,0,4.84-22.83,56.62,56.62,0,0,0-.47-7.29q-2.92-1.74-5.85-3.45C203,93.82,158.66,94,130.83,110.18Z"/><path class="op-4" d="M201.48,123.57a30.53,30.53,0,0,0-40.46,0c-1.28,1.1-4.54,4-5.85,5.11-7.51,6.62-14.95,13.29-22.27,20.11A56.31,56.31,0,0,0,156,170.41c7.53-11.62,14.68-23.48,21.68-35.39a4.17,4.17,0,0,1,7.37.34c.16.29.65,1.1.82,1.4,1.36,2.35,5.14,8.67,6.59,11.09,4.6,7.58,9.26,15.12,14.07,22.55a56.36,56.36,0,0,0,23.08-21.61c-7.32-6.82-14.76-13.5-22.28-20.12C206,127.51,202.76,124.67,201.48,123.57Z"/><path class="op-5" d="M156.19,75.44A183.55,183.55,0,0,1,177,77.82c3.87.61,8.23,1.57,12.12,1.83a48,48,0,0,0,24.25-5.38,56.13,56.13,0,0,0-65.93,1.18Q151.85,75.22,156.19,75.44Z"/><path class="op-6" d="M182.45,138.73l-1-1.76a.21.21,0,0,0-.36,0c-1.93,3.3-5.49,9.59-7.4,13-4.21,7.56-8.35,15.14-12.34,22.8a56.3,56.3,0,0,0,39.83,0c-1.34-2.57-2.7-5.14-4.06-7.7C192.5,156.44,187.34,147.22,182.45,138.73Z"/></svg>
+      </a>
+    </div>
+    <section id="passes" hidden>
+      <div id="passes-head">
+        <h2 id="passes-title">Upcoming satellite passes</h2>
+        <span class="note" id="passes-note"></span>
+        <span class="spacer"></span>
+        <a class="button" id="passes-nextpass" target="_blank" rel="noopener">Open in Next Pass</a>
+        <button id="passes-close">Close</button>
+      </div>
+      <div id="passes-body"></div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/7.2.0/turf.min.js"></script>
+<script type="module">
+const DATA_URL = "./data/events.geojson";
+const META_URL = "./data/events.meta.json";
+const NWS_URL = "https://api.weather.gov/alerts/active";
+const USGS_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query";
+const NEXTPASS_SITE = "https://opera-cal-val.github.io/next_pass/";
+const PASSES_URL = `${NEXTPASS_SITE}data/upcoming_passes.parquet`;
+const PASSES_META_URL = `${NEXTPASS_SITE}data/upcoming_passes.meta.json`;
+const LIVE_MS = 5 * 60 * 1000;
+const ZONE_URL_RE = /^https:\/\/api\.weather\.gov\/zones\/[a-z]+\/[A-Z0-9]+$/;
+const ZONE_SIMPLIFY_DEG = 0.005;
+const ZONE_FETCH_LIMIT = 40;
+const MAX_PASS_FOOTPRINTS = 300;
+const LINK_PRECISION = 5;
+const AOI_SIMPLIFY_ABOVE = 2000;
+const AOI_SIMPLIFY_DEG = 0.001;
+
+const SENSORS = [
+  { key: "sentinel-1", label: "Sentinel-1", cssVar: "--s1" },
+  { key: "sentinel-2", label: "Sentinel-2", cssVar: "--s2", optical: true },
+  { key: "landsat-8", label: "Landsat 8", cssVar: "--l8", optical: true },
+  { key: "landsat-9", label: "Landsat 9", cssVar: "--l9", optical: true },
+  { key: "nisar", label: "NISAR", cssVar: "--nisar" },
+];
+
+// Same scale as rules._SEVERITY_RANK so NWS and USGS severities compare.
+const SEVERITY_RANK = {
+  unknown: 0, minor: 1, light: 1, moderate: 2, severe: 3, strong: 3, extreme: 4, major: 4, great: 4,
+};
+// Same hues as plot_html_map.FAMILY_HUES; only used for event types the snapshot has no colour for.
+const FAMILY_HUES = { flood: 210, hurricane: 120, storm: 10, thunderstorm: 270, earthquake: 45 };
+
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, ...children) => {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children.filter((c) => c != null && c !== ""));
+  return node;
+};
+const severityRank = (s) => SEVERITY_RANK[String(s || "").trim().toLowerCase()] ?? 0;
+const sensorColor = (key) => css(SENSORS.find((s) => s.key === key)?.cssVar || "--muted");
+const sensorLabel = (key) => SENSORS.find((s) => s.key === key)?.label || key;
+
+function safeHref(url) {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
+// Mirrors plot_html_map._detect_family (thunderstorm must be checked before storm).
+function familyOf(eventType) {
+  const s = String(eventType || "").toLowerCase();
+  for (const f of ["flood", "hurricane", "earthquake", "thunderstorm"]) if (s.includes(f)) return f;
+  return "storm";
+}
+
+const state = {
+  meta: {},
+  filters: {},
+  colors: {},
+  snapshot: { nws: [], usgs: [] },
+  snapshotGeom: new Map(),
+  live: { nws: null, usgs: null },
+  liveAt: null,
+  liveError: null,
+  events: [],
+  disabled: new Set(),
+  minSeverity: 0,
+  quakeDays: 7,
+  aoi: null,
+  aoiLayer: null,
+  aoiName: null,
+  aoiToken: null,
+  selectedId: null,
+  pendingId: null,
+  ready: false,
+};
+
+function colorOf(eventType) {
+  return state.colors[eventType] || `hsl(${FAMILY_HUES[familyOf(eventType)]}, 75%, 48%)`;
+}
+
+const map = L.map("map", { worldCopyJump: true, preferCanvas: false }).setView([39.8, -98.6], 4);
+const streetLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom: 18,
+  className: "street",
+}).addTo(map);
+const satelliteLayer = L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  { attribution: "Tiles &copy; Esri", maxZoom: 18 },
+);
+L.control.layers({ "Street map": streetLayer, Satellite: satelliteLayer }, null, { position: "topright" }).addTo(map);
+const eventLayer = L.featureGroup().addTo(map);
+const passLayer = L.featureGroup().addTo(map);
+
+// ---- normalisation: live feed features -> the same shape export.py writes ----
+
+function isoFromMs(ms) {
+  const n = Number(ms);
+  return Number.isFinite(n) ? new Date(n).toISOString().replace(/\.\d{3}Z$/, "Z") : null;
+}
+
+function usgsSeverity(mag) {
+  if (mag == null) return null;
+  if (mag < 3) return "Minor";
+  if (mag < 4) return "Light";
+  if (mag < 5) return "Moderate";
+  if (mag < 6) return "Strong";
+  if (mag < 7) return "Major";
+  return "Great";
+}
+
+function numOrNull(v) {
+  const n = v == null || v === "" ? NaN : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function fromUsgs(f) {
+  const p = f.properties || {};
+  const coords = f.geometry?.coordinates || [];
+  const mag = numOrNull(p.mag);
+  return {
+    type: "Feature",
+    id: f.id,
+    geometry: coords.length >= 2 ? { type: "Point", coordinates: [coords[0], coords[1]] } : null,
+    properties: {
+      id: f.id,
+      provider: "usgs",
+      event: "Earthquake",
+      family: "earthquake",
+      severity: usgsSeverity(mag),
+      title: p.title || (mag != null ? `M ${mag.toFixed(1)}` : "Earthquake"),
+      link: p.url,
+      updated: isoFromMs(p.updated) || isoFromMs(p.time),
+      time: isoFromMs(p.time),
+      magnitude: mag,
+      depth_km: numOrNull(coords[2]),
+      place: p.place,
+      tsunami: Boolean(p.tsunami),
+      pager_alert: p.alert || null,
+      geometry_source: "point",
+    },
+  };
+}
+
+function fromNws(f) {
+  const p = f.properties || {};
+  const id = f.id || p.id || p["@id"];
+  return {
+    type: "Feature",
+    id,
+    geometry: f.geometry || null,
+    properties: {
+      id,
+      provider: "nws",
+      event: p.event || p.headline || "NWS Alert",
+      family: familyOf(p.event),
+      severity: p.severity,
+      title: p.headline || p.event,
+      link: f.id || p.id || p["@id"],
+      updated: p.effective || p.onset || p.sent || p.updated,
+      time: p.onset || p.effective || p.sent,
+      expires: p.ends || p.expires,
+      area: p.areaDesc,
+      headline: p.headline,
+      sender: p.senderName,
+      urgency: p.urgency,
+      certainty: p.certainty,
+      description: p.description,
+      instruction: p.instruction,
+      affectedZones: Array.isArray(p.affectedZones) ? p.affectedZones : [],
+      geometry_source: f.geometry ? "alert" : null,
+    },
+  };
+}
+
+// ---- filtering: a port of rules.filter_events, driven by the thresholds in events.meta.json ----
+
+// rules._as_point_from_geometry: Point coords, else the first vertex of the first ring.
+function representativePoint(geom) {
+  if (!geom) return null;
+  if (geom.type === "Point") return geom.coordinates;
+  if (geom.type === "Polygon") return geom.coordinates?.[0]?.[0] || null;
+  if (geom.type === "MultiPolygon") return geom.coordinates?.[0]?.[0]?.[0] || null;
+  return null;
+}
+
+function passesRules(f, rawGeometry) {
+  const p = f.properties;
+  const flt = state.filters;
+  if (flt.min_severity && severityRank(p.severity) < severityRank(flt.min_severity)) return false;
+  if (p.provider === "usgs" && flt.earthquake) {
+    const { min_magnitude: minMag, max_depth_km: maxDepth } = flt.earthquake;
+    if (minMag != null && p.magnitude != null && p.magnitude < minMag) return false;
+    if (maxDepth != null && p.depth_km != null && p.depth_km > maxDepth) return false;
+  }
+  if (p.provider === "nws" && flt.weather) {
+    const text = String(p.event || p.title || "").toLowerCase();
+    const hit = (list) => list.some((pat) => text.includes(String(pat || "").toLowerCase()));
+    if (flt.weather.include_events?.length && !hit(flt.weather.include_events)) return false;
+    if (flt.weather.exclude_events?.length && hit(flt.weather.exclude_events)) return false;
+  }
+  if (flt.aoi) {
+    const pt = representativePoint(rawGeometry);
+    if (pt && !turf.booleanPointInPolygon(pt.slice(0, 2), flt.aoi)) return false;
+  }
+  return true;
+}
+
+// ---- data loading ----
+
+async function fetchJSON(url, opts = {}) {
+  const r = await fetch(url, { cache: "no-store", ...opts });
+  if (!r.ok) throw new Error(`HTTP ${r.status} from ${new URL(url, location.href).host}`);
+  return r.json();
+}
+
+// Pages caches files for 10 min; the query string makes every refresh see the newest snapshot.
+async function loadSnapshot() {
+  const bust = `?t=${Date.now()}`;
+  const [fc, meta] = await Promise.all([
+    fetchJSON(DATA_URL + bust),
+    fetchJSON(META_URL + bust).catch(() => ({})),
+  ]);
+  const feats = Array.isArray(fc.features) ? fc.features : [];
+  state.meta = meta;
+  state.filters = meta.filters || {};
+  state.colors = meta.colors || {};
+  state.snapshot = {
+    nws: feats.filter((f) => f.properties?.provider === "nws"),
+    usgs: feats.filter((f) => f.properties?.provider === "usgs"),
+  };
+  state.snapshotGeom = new Map(feats.filter((f) => f.geometry).map((f) => [f.id, f.geometry]));
+}
+
+const providerEnabled = (key) => !state.meta.providers || state.meta.providers.includes(key);
+
+// Some NWS zones are GeometryCollections; keep only the polygon parts.
+function polygonsIn(g) {
+  if (!g) return [];
+  if (g.type === "Polygon") return [g.coordinates];
+  if (g.type === "MultiPolygon") return g.coordinates;
+  if (g.type === "GeometryCollection") return (g.geometries || []).flatMap(polygonsIn);
+  return [];
+}
+
+const zoneCache = new Map();
+function fetchZone(url) {
+  if (!zoneCache.has(url)) {
+    zoneCache.set(url, fetch(url, { headers: { Accept: "application/geo+json" } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const polys = polygonsIn(d?.geometry);
+        if (!polys.length) return null;
+        const geom = polys.length === 1 ? { type: "Polygon", coordinates: polys[0] } : { type: "MultiPolygon", coordinates: polys };
+        return turf.simplify(geom, { tolerance: ZONE_SIMPLIFY_DEG, highQuality: false });
+      })
+      .catch(() => null));
+  }
+  return zoneCache.get(url);
+}
+
+// Most NWS warnings carry only zone references; reuse the snapshot's outline when it has one.
+async function resolveZoneGeometries(features) {
+  const pending = [];
+  for (const f of features) {
+    if (f.geometry) continue;
+    const known = state.snapshotGeom.get(f.id);
+    if (known) {
+      f.geometry = known;
+      f.properties.geometry_source = "zones";
+    } else {
+      pending.push(f);
+    }
+  }
+  const wanted = [...new Set(pending.flatMap((f) => f.properties.affectedZones.filter((z) => ZONE_URL_RE.test(z))))];
+  const allowed = new Set(wanted.filter((z) => zoneCache.has(z)).concat(wanted.filter((z) => !zoneCache.has(z)).slice(0, ZONE_FETCH_LIMIT)));
+  await Promise.all([...allowed].map(fetchZone));
+  for (const f of pending) {
+    const zones = f.properties.affectedZones.filter((z) => allowed.has(z));
+    const parts = (await Promise.all(zones.map(fetchZone))).filter(Boolean);
+    if (!parts.length) continue;
+    let merged = parts[0];
+    if (parts.length > 1) {
+      try {
+        merged = turf.union(turf.featureCollection(parts.map((g) => turf.feature(g))))?.geometry || parts[0];
+      } catch {
+        merged = { type: "MultiPolygon", coordinates: parts.flatMap((g) => (g.type === "Polygon" ? [g.coordinates] : g.coordinates)) };
+      }
+    }
+    f.geometry = merged;
+    f.properties.geometry_source = "zones";
+  }
+}
+
+async function liveNws() {
+  const data = await fetchJSON(NWS_URL, { headers: { Accept: "application/geo+json" } });
+  const feats = (Array.isArray(data.features) ? data.features : []).map(fromNws);
+  if (!feats.length) throw new Error("feed returned no alerts");
+  const kept = feats.filter((f) => passesRules(f, f.geometry));
+  await resolveZoneGeometries(kept);
+  return kept;
+}
+
+async function liveUsgs() {
+  const days = state.filters.usgs_lookback_days || 7;
+  const params = new URLSearchParams({
+    format: "geojson",
+    starttime: new Date(Date.now() - days * 86400000).toISOString().slice(0, 19),
+    minmagnitude: String(state.filters.usgs_query_min_magnitude ?? 2.5),
+    limit: "2000",
+  });
+  const data = await fetchJSON(`${USGS_URL}?${params}`);
+  return (Array.isArray(data.features) ? data.features : []).map(fromUsgs).filter((f) => passesRules(f, f.geometry));
+}
+
+async function refreshLive() {
+  const errors = [];
+  const jobs = [];
+  if (providerEnabled("nws")) {
+    jobs.push(liveNws().then((v) => { state.live.nws = v; }, (e) => errors.push(`NWS ${e.message}`)));
+  }
+  if (providerEnabled("usgs")) {
+    jobs.push(liveUsgs().then((v) => { state.live.usgs = v; }, (e) => errors.push(`USGS ${e.message}`)));
+  }
+  await Promise.all(jobs);
+  state.liveAt = new Date();
+  state.liveError = errors.length ? errors.join("; ") : null;
+}
+
+function currentFeatures() {
+  return [...(state.live.nws ?? state.snapshot.nws), ...(state.live.usgs ?? state.snapshot.usgs)];
+}
+
+let liveTimer = null;
+let ticking = false;
+function scheduleLive() {
+  clearTimeout(liveTimer);
+  if ($("live").checked && !document.hidden) liveTimer = setTimeout(tick, LIVE_MS);
+}
+async function tick() {
+  if (ticking) return;
+  ticking = true;
+  $("refresh-now").disabled = true;
+  try {
+    await loadSnapshot().catch(() => {});
+    await refreshLive();
+    rebuild();
+  } finally {
+    ticking = false;
+    $("refresh-now").disabled = false;
+    scheduleLive();
+  }
+}
+document.addEventListener("visibilitychange", () => {
+  const stale = !state.liveAt || Date.now() - state.liveAt.getTime() >= LIVE_MS;
+  if (!document.hidden && $("live").checked && stale) tick();
+  else scheduleLive();
+});
+$("live").addEventListener("change", () => {
+  if (!$("live").checked) {
+    state.live = { nws: null, usgs: null };
+    state.liveAt = state.liveError = null;
+    rebuild();
+  }
+  $("live").checked ? tick() : scheduleLive();
+});
+$("refresh-now").addEventListener("click", () => {
+  if (!$("live").checked) $("live").checked = true;
+  tick();
+});
+
+// ---- view model ----
+
+const parseTime = (s) => {
+  const t = s ? Date.parse(s) : NaN;
+  return Number.isFinite(t) ? new Date(t) : null;
+};
+
+function toEvent(f) {
+  const p = f.properties;
+  let bbox = null;
+  try {
+    if (f.geometry) bbox = turf.bbox(f.geometry);
+  } catch {}
+  return { id: f.id, p, geometry: f.geometry, bbox, time: parseTime(p.time), color: colorOf(p.event) };
+}
+
+function rebuild() {
+  state.events = currentFeatures().map(toEvent);
+  state.matchCache = new Map();
+  buildHazardRows();
+  updateMeta();
+  render();
+}
+
+function updateMeta() {
+  const dot = $("live-dot");
+  const fmt = (d) => d.toUTCString().replace(/:\d\d GMT$/, " UTC");
+  const parts = [`${state.events.length} active event${state.events.length === 1 ? "" : "s"}`];
+  if (state.liveAt) parts.push(`live ${fmt(state.liveAt)}`);
+  const snapAt = parseTime(state.meta.generated_at);
+  if (snapAt) parts.push(`snapshot ${fmt(snapAt)}`);
+  if (state.liveError) parts.push(`live update failed (${state.liveError}); showing snapshot`);
+  $("meta").textContent = parts.join(" · ");
+  dot.className = `dot${state.liveError ? " err" : state.liveAt ? " live" : ""}`;
+  dot.title = state.liveError ? "Live update failed" : state.liveAt ? "Live" : "Snapshot only";
+
+  const flt = state.filters;
+  const bits = [];
+  if (flt.earthquake?.min_magnitude != null) bits.push(`earthquakes M${flt.earthquake.min_magnitude}+`);
+  if (flt.weather?.include_events?.length) bits.push(`${flt.weather.include_events.length} NWS warning types`);
+  if (flt.min_severity) bits.push(`severity ≥ ${flt.min_severity}`);
+  if (flt.aoi) bits.push("limited to the configured AOI");
+  $("filters-note").textContent = bits.length ? `Same rules as the e-mail alerts: ${bits.join(", ")}.` : "";
+}
+
+function buildHazardRows() {
+  const counts = new Map();
+  state.events.forEach((e) => counts.set(e.p.event, (counts.get(e.p.event) || 0) + 1));
+  const types = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a) || a.localeCompare(b));
+  const box = $("hazards");
+  if (!types.length) {
+    box.replaceChildren(el("div", { className: "note", textContent: "No active events right now." }));
+    return;
+  }
+  box.replaceChildren(...types.map((t) => {
+    const cb = el("input", { type: "checkbox", checked: !state.disabled.has(t) });
+    cb.addEventListener("change", () => {
+      cb.checked ? state.disabled.delete(t) : state.disabled.add(t);
+      render();
+    });
+    const chip = el("span", { className: `chip${familyOf(t) === "earthquake" ? " round" : ""}` });
+    chip.style.background = colorOf(t);
+    const n = el("span", { className: "n" });
+    n.dataset.type = t;
+    return el("label", { className: "hazard-row" }, cb, chip, el("span", { textContent: t }), n);
+  }));
+}
+
+function intersectsAOI(e) {
+  if (!state.aoi) return true;
+  if (!e.geometry || !e.bbox) return false;
+  if (state.matchCache.has(e.id)) return state.matchCache.get(e.id);
+  const [ax0, ay0, ax1, ay1] = state.aoiBbox;
+  const [x0, y0, x1, y1] = e.bbox;
+  let hit = !(x1 < ax0 || x0 > ax1 || y1 < ay0 || y0 > ay1);
+  if (hit) {
+    try {
+      hit = turf.booleanIntersects(state.aoi, e.geometry);
+    } catch {
+      hit = false;
+    }
+  }
+  state.matchCache.set(e.id, hit);
+  return hit;
+}
+
+function visibleEvents() {
+  const quakeCutoff = Date.now() - state.quakeDays * 86400000;
+  return state.events.filter((e) => {
+    if (state.disabled.has(e.p.event)) return false;
+    if (state.minSeverity && severityRank(e.p.severity) < state.minSeverity) return false;
+    if (e.p.provider === "usgs" && e.time && e.time.getTime() < quakeCutoff) return false;
+    return intersectsAOI(e);
+  });
+}
+
+// ---- formatting ----
+
+const fmtUTC = (d) => (d ? `${d.toISOString().slice(0, 16).replace("T", " ")} UTC` : "");
+function fmtAgo(d) {
+  if (!d) return "";
+  const mins = Math.round((Date.now() - d.getTime()) / 60000);
+  const abs = Math.abs(mins);
+  const span = abs < 60 ? `${abs} min` : abs < 2880 ? `${Math.round(abs / 60)} h` : `${Math.round(abs / 1440)} d`;
+  return mins >= 0 ? `${span} ago` : `in ${span}`;
+}
+
+function headline(e) {
+  if (e.p.provider === "usgs") {
+    const mag = e.p.magnitude != null ? `M ${e.p.magnitude.toFixed(1)}` : "Earthquake";
+    return e.p.place ? `${mag} · ${e.p.place}` : mag;
+  }
+  return e.p.area || e.p.title || e.p.event;
+}
+
+function detailFields(e) {
+  const p = e.p;
+  if (p.provider === "usgs") {
+    return [
+      ["magnitude", p.magnitude != null ? `M ${p.magnitude.toFixed(1)}` : null],
+      ["depth", p.depth_km != null ? `${p.depth_km.toFixed(1)} km` : null],
+      ["time", fmtUTC(e.time)],
+      ["severity", p.severity],
+      ["PAGER alert", p.pager_alert],
+      ["tsunami", p.tsunami ? "tsunami flag set by USGS" : null],
+    ];
+  }
+  return [
+    ["severity", [p.severity, p.urgency, p.certainty].filter(Boolean).join(" · ")],
+    ["onset", fmtUTC(e.time)],
+    ["expires", fmtUTC(parseTime(p.expires))],
+    ["issued by", p.sender],
+    ["shape", p.geometry_source === "zones" ? "NWS forecast zones (approximate)" : null],
+  ];
+}
+
+function buildDetail(e) {
+  const dl = el("dl", { className: "detail" });
+  detailFields(e).filter(([, v]) => v).forEach(([k, v]) => {
+    dl.append(el("div", {}, el("dt", { textContent: k }), el("dd", { textContent: v })));
+  });
+  if (e.p.headline && e.p.headline !== headline(e)) dl.append(el("div", {}, el("dd", { textContent: e.p.headline })));
+  for (const [label, text] of [["Description", e.p.description], ["Instructions", e.p.instruction]]) {
+    if (text) dl.append(el("details", {}, el("summary", { textContent: label }), el("p", { textContent: text })));
+  }
+  const actions = el("div", { className: "actions" });
+  if (e.geometry) {
+    const passes = el("button", { textContent: "Upcoming satellite passes" });
+    passes.addEventListener("click", (ev) => { ev.stopPropagation(); showPasses(e); });
+    const zoom = el("button", { textContent: "Zoom" });
+    zoom.addEventListener("click", (ev) => { ev.stopPropagation(); zoomTo(e); });
+    actions.append(passes, zoom);
+    nextPassLink(e).then((href) => {
+      if (href) actions.append(el("a", { className: "button", href, target: "_blank", rel: "noopener", textContent: "Open in Next Pass" }));
+    });
+  }
+  const src = safeHref(e.p.link);
+  if (src) {
+    actions.append(el("a", {
+      className: "button", href: src, target: "_blank", rel: "noopener noreferrer",
+      textContent: e.p.provider === "usgs" ? "USGS event page" : "NWS alert",
+    }));
+  }
+  actions.addEventListener("click", (ev) => ev.stopPropagation());
+  dl.append(actions);
+  return dl;
+}
+
+function popupFor(e) {
+  const box = el("div", { className: "popup" }, el("b", { textContent: e.p.event }), el("div", { textContent: headline(e) }));
+  if (e.time) box.append(el("div", { textContent: `${fmtUTC(e.time)} (${fmtAgo(e.time)})` }));
+  const btn = el("button", { textContent: "Details & satellite passes", style: "margin-top:6px;padding:3px 9px;font-size:12px" });
+  btn.addEventListener("click", () => { selectEvent(e.id, { scroll: true }); if (e.geometry) showPasses(e); });
+  box.append(btn);
+  return box;
+}
+
+// Mirrors plot_html_map._magnitude_to_radius.
+const quakeRadius = (mag) => (mag == null ? 5 : Math.max(4, Math.min(22, 1.6 * Math.max(0, mag - 1) ** 1.4)));
+
+function layerFor(e) {
+  if (!e.geometry) return null;
+  if (e.geometry.type === "Point") {
+    const [lng, lat] = e.geometry.coordinates;
+    e.baseStyle = { color: e.color, weight: 1.5, fillColor: e.color, fillOpacity: 0.55, radius: quakeRadius(e.p.magnitude) };
+    return L.circleMarker([lat, lng], e.baseStyle);
+  }
+  e.baseStyle = { color: e.color, weight: 2, fillColor: e.color, fillOpacity: 0.3 };
+  return L.geoJSON(e.geometry, { style: () => e.baseStyle });
+}
+
+// ---- render ----
+
+function render() {
+  writeHash();
+  const shown = visibleEvents();
+  eventLayer.clearLayers();
+  const counts = {};
+  shown.forEach((e) => { counts[e.p.event] = (counts[e.p.event] || 0) + 1; });
+  document.querySelectorAll("#hazards .n").forEach((n) => { n.textContent = String(counts[n.dataset.type] || 0); });
+  $("status").textContent = String(shown.length);
+
+  const groups = new Map();
+  shown.forEach((e) => {
+    if (!groups.has(e.p.event)) groups.set(e.p.event, []);
+    groups.get(e.p.event).push(e);
+  });
+  const items = [];
+  [...groups.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    .forEach(([type, evs]) => {
+      items.push(el("div", { className: "group-head", textContent: `${type} (${evs.length})` }));
+      evs.sort((a, b) => (b.time?.getTime() || 0) - (a.time?.getTime() || 0)).forEach((e) => {
+        const chip = el("span", { className: `chip${e.p.family === "earthquake" ? " round" : ""}` });
+        chip.style.background = e.color;
+        const row = el("div", { className: "event" },
+          chip,
+          el("span", { className: "what", textContent: headline(e) }),
+          el("span", { className: "when", textContent: fmtAgo(e.time), title: fmtUTC(e.time) }),
+          e.geometry ? null : el("span", { className: "sub", textContent: "No shape available; not shown on the map." }),
+          buildDetail(e));
+        row.addEventListener("click", () => selectEvent(e.id));
+        e.row = row;
+        items.push(row);
+      });
+    });
+  // Draw small quakes last so they stay clickable on top of large warning polygons.
+  [...shown].sort((a, b) => (a.p.family === "earthquake") - (b.p.family === "earthquake")
+    || (b.p.magnitude ?? 0) - (a.p.magnitude ?? 0)).forEach((e) => {
+    const layer = layerFor(e);
+    if (!layer) return;
+    e.layer = layer.bindPopup(() => popupFor(e), { maxWidth: 340 }).addTo(eventLayer);
+    layer.on("click", () => selectEvent(e.id, { scroll: true, pan: false }));
+  });
+
+  if (!items.length) {
+    const why = state.events.length ? "No events match the current filters." : "No active events right now.";
+    items.push(el("div", { id: "empty", textContent: why }));
+  }
+  $("results").replaceChildren(...items);
+
+  const keep = state.selectedId || state.pendingId;
+  state.selectedId = null;
+  if (keep) {
+    const found = shown.find((e) => e.id === keep);
+    if (found) {
+      selectEvent(found.id, { scroll: true, pan: Boolean(state.pendingId) });
+      state.pendingId = null;
+    } else if (state.pendingId && state.ready) {
+      aoiMessage("The shared event is no longer active or is hidden by the current filters.", true);
+      state.pendingId = null;
+    }
+  }
+}
+
+function zoomTo(e) {
+  if (!e.layer) return;
+  if (e.geometry.type === "Point") map.setView(e.layer.getLatLng(), Math.max(map.getZoom(), 6));
+  else map.fitBounds(e.layer.getBounds().pad(0.3));
+}
+
+function selectEvent(id, { scroll = false, pan = true } = {}) {
+  const prev = state.events.find((e) => e.id === state.selectedId);
+  if (prev) {
+    prev.row?.classList.remove("sel");
+    prev.layer?.setStyle?.(prev.baseStyle);
+  }
+  if (prev && prev.id === id && !scroll) {
+    state.selectedId = null;
+    writeHash();
+    return;
+  }
+  const e = state.events.find((x) => x.id === id);
+  state.selectedId = e ? id : null;
+  if (e) {
+    e.row?.classList.add("sel");
+    e.layer?.setStyle?.({ weight: 3.5, fillOpacity: e.geometry?.type === "Point" ? 0.85 : 0.5 });
+    e.layer?.bringToFront?.();
+    if (scroll) e.row?.scrollIntoView({ block: "nearest" });
+    if (pan) zoomTo(e);
+    if (passView.event && passView.event.id !== id && e.geometry) showPasses(e);
+  }
+  writeHash();
+}
+
+$("min-severity").addEventListener("change", (ev) => { state.minSeverity = Number(ev.target.value); render(); });
+$("quake-days").addEventListener("change", (ev) => { state.quakeDays = Number(ev.target.value); render(); });
+
+// ---- satellite passes: the same precomputed schedule the Next Pass site uses ----
+
+const passView = { event: null, rows: null, meta: null, loading: null, selected: null };
+
+function decodeWKB(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let pos = 0;
+  function geom() {
+    const little = view.getUint8(pos) === 1; pos += 1;
+    const type = view.getUint32(pos, little) & 0xff; pos += 4;
+    const f64 = () => { const v = view.getFloat64(pos, little); pos += 8; return v; };
+    const u32 = () => { const v = view.getUint32(pos, little); pos += 4; return v; };
+    if (type === 1) return { type: "Point", coordinates: [f64(), f64()] };
+    if (type === 3) {
+      const rings = Array.from({ length: u32() }, () => Array.from({ length: u32() }, () => [f64(), f64()]));
+      return { type: "Polygon", coordinates: rings };
+    }
+    if (type === 6) return { type: "MultiPolygon", coordinates: Array.from({ length: u32() }, () => geom().coordinates) };
+    throw new Error(`Unsupported WKB geometry type ${type}`);
+  }
+  return geom();
+}
+
+function loadPasses() {
+  passView.loading ??= (async () => {
+    const [{ parquetReadObjects }, { compressors }] = await Promise.all([
+      import("https://cdn.jsdelivr.net/npm/hyparquet@1.16.0/+esm"),
+      import("https://cdn.jsdelivr.net/npm/hyparquet-compressors@1.1.1/+esm"),
+    ]);
+    const [buf, meta] = await Promise.all([
+      fetch(PASSES_URL).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.arrayBuffer();
+      }),
+      fetch(PASSES_META_URL).then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+    ]);
+    const raw = await parquetReadObjects({ file: buf, compressors, utf8: false });
+    passView.meta = meta;
+    passView.rows = raw.filter((r) => r.geometry).map((r) => {
+      const geojson = decodeWKB(r.geometry);
+      return {
+        sensor: r.sensor,
+        platform: r.platform,
+        mode: r.mode,
+        direction: r.orbit_direction,
+        track: r.track == null ? null : Number(r.track),
+        begin: r.begin_time instanceof Date ? r.begin_time : new Date(r.begin_time),
+        estimated: Boolean(r.time_is_estimated),
+        geojson,
+        bbox: turf.bbox(geojson),
+      };
+    });
+  })().catch((err) => {
+    passView.loading = null;
+    throw err;
+  });
+  return passView.loading;
+}
+
+// Same definition as Next Pass "AOI % overlap": area(event ∩ footprint) / area(event); points are 100%.
+function coverage(target, targetArea, footprint) {
+  if (target.type === "Point") return 100;
+  try {
+    const inter = turf.intersect(turf.featureCollection([turf.feature(target), turf.feature(footprint)]));
+    return inter ? Math.min(100, (100 * turf.area(inter)) / targetArea) : 0;
+  } catch {
+    return null;
+  }
+}
+
+function passesOver(geometry) {
+  const target = turf.coordAll(geometry).length > AOI_SIMPLIFY_ABOVE
+    ? turf.simplify(geometry, { tolerance: AOI_SIMPLIFY_DEG, highQuality: false })
+    : geometry;
+  const [ax0, ay0, ax1, ay1] = turf.bbox(target);
+  const area = target.type === "Point" ? 0 : turf.area(target);
+  const now = Date.now();
+  return passView.rows.filter((r) => {
+    if (r.begin.getTime() < now - 3600000) return false;
+    const [x0, y0, x1, y1] = r.bbox;
+    if (x1 < ax0 || x0 > ax1 || y1 < ay0 || y0 > ay1) return false;
+    try {
+      return turf.booleanIntersects(target, r.geojson);
+    } catch {
+      return false;
+    }
+  }).map((r) => ({ ...r, pct: coverage(target, area, r.geojson) }))
+    .sort((a, b) => a.begin - b.begin);
+}
+
+function fmtPassTime(r) {
+  return `${r.begin.toISOString().slice(5, 16).replace("T", " ")} UTC${r.estimated ? " (est.)" : ""}`;
+}
+
+async function showPasses(e) {
+  passView.event = e;
+  passView.selected = null;
+  passLayer.clearLayers();
+  $("passes").hidden = false;
+  $("passes-title").textContent = `Upcoming satellite passes · ${headline(e)}`;
+  $("passes-note").textContent = "loading schedule from Next Pass…";
+  $("passes-body").replaceChildren();
+  const href = await nextPassLink(e);
+  $("passes-nextpass").hidden = !href;
+  if (href) $("passes-nextpass").href = href;
+  map.invalidateSize();
+  try {
+    await loadPasses();
+  } catch (err) {
+    if (passView.event !== e) return;
+    $("passes-note").textContent = `Could not load the Next Pass schedule (${err.message}). Use "Open in Next Pass" instead.`;
+    return;
+  }
+  if (passView.event !== e) return;
+  const found = passesOver(e.geometry);
+  const when = passView.meta?.generated_at ? ` · schedule updated ${fmtUTC(new Date(passView.meta.generated_at))}` : "";
+  $("passes-note").textContent = `${found.length} pass${found.length === 1 ? "" : "es"} in the next ${passView.meta?.days || 7} days${when}. Times marked (est.) are orbit-geometry estimates.`;
+  renderPasses(found);
+}
+
+function renderPasses(found) {
+  passLayer.clearLayers();
+  if (!found.length) {
+    $("passes-body").replaceChildren(el("div", { className: "note", style: "padding:4px 8px", textContent: "No planned passes intersect this event." }));
+    return;
+  }
+  found.slice(0, MAX_PASS_FOOTPRINTS).forEach((r) => {
+    const landsat = r.sensor.startsWith("landsat");
+    r.baseStyle = { color: sensorColor(r.sensor), weight: landsat ? 1 : 1.5, opacity: landsat ? 0.5 : 0.8, fillOpacity: landsat ? 0 : 0.05, dashArray: "4 3" };
+    r.layer = L.geoJSON(r.geojson, { style: r.baseStyle, interactive: false }).addTo(passLayer);
+  });
+  const head = el("tr", {}, ...["When", "Sensor", "Orbit", "Coverage", "Mode"].map((t) => el("th", { textContent: t })));
+  const rows = found.map((r) => {
+    const chip = el("span", { className: "chip" });
+    chip.style.background = sensorColor(r.sensor);
+    const orbit = [r.direction ? (r.direction === "ascending" ? "asc" : "desc") : null,
+      r.track != null && !Number.isNaN(r.track) ? `track ${r.track}` : null].filter(Boolean).join(" · ");
+    const pct = r.pct == null ? "–" : `${r.pct.toFixed(r.pct < 10 ? 1 : 0)}%${SENSORS.find((s) => s.key === r.sensor)?.optical ? " *" : ""}`;
+    const tr = el("tr", { className: "pass" },
+      el("td", { textContent: fmtPassTime(r) }),
+      el("td", {}, el("span", { className: "sensor" }, chip, el("span", { textContent: sensorLabel(r.sensor) }))),
+      el("td", { textContent: orbit }),
+      el("td", { textContent: pct }),
+      el("td", { textContent: r.mode || "" }));
+    tr.addEventListener("click", () => selectPass(r, tr));
+    return tr;
+  });
+  $("passes-body").replaceChildren(
+    el("table", {}, el("thead", {}, head), el("tbody", {}, ...rows)),
+    el("div", { className: "note", style: "padding:4px 8px", textContent: "* optical sensor: clouds may reduce usable coverage." }),
+  );
+}
+
+function selectPass(r, tr) {
+  const prev = passView.selected;
+  if (prev) {
+    prev.tr.classList.remove("sel");
+    prev.r.layer?.setStyle(prev.r.baseStyle);
+  }
+  passView.selected = prev?.r === r ? null : { r, tr };
+  if (passView.selected) {
+    tr.classList.add("sel");
+    if (r.layer) {
+      r.layer.setStyle({ weight: 3, opacity: 1, fillOpacity: 0.15, dashArray: null });
+      r.layer.bringToFront();
+      map.fitBounds(r.layer.getBounds().pad(0.2));
+    }
+  }
+}
+
+function closePasses() {
+  passView.event = passView.selected = null;
+  passLayer.clearLayers();
+  $("passes").hidden = true;
+  map.invalidateSize();
+}
+$("passes-close").addEventListener("click", closePasses);
+
+// ---- Next Pass deep links use the same #aoi= format as its "Copy link" button ----
+
+const LINK_SCALE = 10 ** LINK_PRECISION;
+function toBase64Url(bytes) {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function fromBase64Url(text) {
+  const bin = atob(text.replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+}
+const polygonsOf = (g) => (g.type === "Polygon" ? [g.coordinates] : g.coordinates);
+
+async function packGeometry(geometry) {
+  let px = 0, py = 0;
+  const deltas = polygonsOf(geometry).map((poly) => poly.map((ring) => ring.flatMap(([x, y]) => {
+    const ix = Math.round(x * LINK_SCALE), iy = Math.round(y * LINK_SCALE);
+    const d = [ix - px, iy - py];
+    [px, py] = [ix, iy];
+    return d;
+  })));
+  const stream = new Blob([JSON.stringify(deltas)]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+  return toBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()));
+}
+
+async function unpackGeometry(text) {
+  const stream = new Blob([fromBase64Url(text)]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  const deltas = JSON.parse(await new Response(stream).text());
+  let px = 0, py = 0;
+  const polygons = deltas.map((poly) => poly.map((ring) => {
+    if (!Array.isArray(ring) || ring.length < 8 || ring.length % 2) throw new Error("malformed ring");
+    const out = [];
+    for (let i = 0; i < ring.length; i += 2) {
+      if (!Number.isInteger(ring[i]) || !Number.isInteger(ring[i + 1])) throw new Error("malformed coordinates");
+      px += ring[i];
+      py += ring[i + 1];
+      const [x, y] = [px / LINK_SCALE, py / LINK_SCALE];
+      if (Math.abs(x) > 180 || Math.abs(y) > 90) throw new Error("coordinates out of range");
+      out.push([x, y]);
+    }
+    return out;
+  }));
+  if (!polygons.length) throw new Error("empty geometry");
+  return polygons.length === 1 ? { type: "Polygon", coordinates: polygons[0] } : { type: "MultiPolygon", coordinates: polygons };
+}
+
+const r5 = (v) => Number(v.toFixed(LINK_PRECISION));
+async function nextPassLink(e) {
+  if (!e.geometry) return null;
+  const name = `&n=${encodeURIComponent(`${e.p.event}: ${headline(e)}`.slice(0, 120))}`;
+  if (e.geometry.type === "Point") {
+    const [lng, lat] = e.geometry.coordinates;
+    return `${NEXTPASS_SITE}#aoi=pt:${r5(lat)},${r5(lng)}${name}`;
+  }
+  try {
+    const simple = turf.truncate(turf.simplify(e.geometry, { tolerance: 0.01, highQuality: false }), { precision: LINK_PRECISION, coordinates: 2 });
+    if (simple.type === "Polygon" || simple.type === "MultiPolygon") {
+      const packed = await packGeometry(simple);
+      if (packed.length < 6000) return `${NEXTPASS_SITE}#aoi=g:${packed}${name}`;
+    }
+  } catch {}
+  const [x0, y0, x1, y1] = e.bbox;
+  return `${NEXTPASS_SITE}#aoi=box:${r5(y0)},${r5(y1)},${r5(x0)},${r5(x1)}${name}`;
+}
+
+// ---- area of interest (filters the event list) ----
+
+const aoiStyle = () => ({ color: css("--ink"), weight: 2, dashArray: "5 4", fillOpacity: 0.02 });
+
+function aoiMessage(text, isError = false) {
+  const m = $("aoi-msg");
+  m.textContent = text;
+  m.hidden = !text;
+  m.classList.toggle("err", isError);
+}
+
+function setAOI(geometry, { fit = false, token = null, name = null } = {}) {
+  if (state.aoiLayer) state.aoiLayer.remove();
+  const simple = turf.coordAll(geometry).length > AOI_SIMPLIFY_ABOVE
+    ? turf.simplify(geometry, { tolerance: AOI_SIMPLIFY_DEG, highQuality: false })
+    : geometry;
+  state.aoi = turf.truncate(simple, { precision: LINK_PRECISION, coordinates: 2 });
+  state.aoiBbox = turf.bbox(state.aoi);
+  state.aoiLayer = L.geoJSON(state.aoi, { style: aoiStyle(), interactive: false }).addTo(map);
+  state.aoiToken = token ? Promise.resolve(token) : null;
+  state.aoiName = name;
+  state.matchCache = new Map();
+  if (fit) map.fitBounds(state.aoiLayer.getBounds().pad(0.2));
+  render();
+}
+
+function clearAOI() {
+  stopDrawing();
+  if (state.aoiLayer) state.aoiLayer.remove();
+  state.aoi = state.aoiLayer = state.aoiToken = state.aoiName = state.aoiBbox = null;
+  state.matchCache = new Map();
+}
+
+function parseBox(text) {
+  const nums = text.trim().split(/[\s,;]+/).filter(Boolean).map(Number);
+  if (nums.length !== 4 || nums.some((n) => !Number.isFinite(n))) throw new Error("enter 4 numbers: lat_min lat_max lon_min lon_max");
+  let [latMin, latMax, lonMin, lonMax] = nums;
+  if ([latMin, latMax].some((v) => Math.abs(v) > 90)) throw new Error("latitude must be between -90 and 90");
+  if ([lonMin, lonMax].some((v) => Math.abs(v) > 180)) throw new Error("longitude must be between -180 and 180");
+  if (latMin > latMax) [latMin, latMax] = [latMax, latMin];
+  if (lonMin > lonMax) [lonMin, lonMax] = [lonMax, lonMin];
+  if (latMin === latMax || lonMin === lonMax) throw new Error("box has zero width or height");
+  return {
+    geometry: turf.bboxPolygon([lonMin, latMin, lonMax, latMax]).geometry,
+    token: `box:${latMin},${latMax},${lonMin},${lonMax}`,
+  };
+}
+
+let activeDraw = null;
+function stopDrawing() {
+  if (activeDraw) activeDraw.disable();
+  activeDraw = null;
+  document.querySelectorAll(".btns button").forEach((b) => b.classList.remove("active"));
+}
+function startDraw(kind, btn) {
+  stopDrawing();
+  btn.classList.add("active");
+  activeDraw = kind === "box"
+    ? new L.Draw.Rectangle(map, { shapeOptions: aoiStyle() })
+    : new L.Draw.Polygon(map, { shapeOptions: aoiStyle(), allowIntersection: false });
+  activeDraw.enable();
+}
+map.on(L.Draw.Event.CREATED, (e) => {
+  stopDrawing();
+  aoiMessage("");
+  if (e.layerType === "rectangle") {
+    const b = e.layer.getBounds();
+    const { geometry, token } = parseBox(`${r5(b.getSouth())} ${r5(b.getNorth())} ${r5(L.Util.wrapNum(b.getWest(), [-180, 180], true))} ${r5(L.Util.wrapNum(b.getEast(), [-180, 180], true))}`);
+    setAOI(geometry, { token });
+  } else {
+    setAOI(e.layer.toGeoJSON().geometry);
+  }
+});
+$("draw-box").addEventListener("click", (e) => startDraw("box", e.currentTarget));
+$("draw-polygon").addEventListener("click", (e) => startDraw("polygon", e.currentTarget));
+$("clear-aoi").addEventListener("click", () => { clearAOI(); aoiMessage(""); render(); });
+$("coord-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  stopDrawing();
+  try {
+    const { geometry, token } = parseBox($("coord-input").value);
+    setAOI(geometry, { fit: true, token });
+    aoiMessage("");
+  } catch (err) {
+    aoiMessage(err.message, true);
+  }
+});
+
+async function readAOIFile(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let text;
+  if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
+    const { unzipSync, strFromU8 } = await import("https://cdn.jsdelivr.net/npm/fflate@0.8.3/+esm");
+    const kmls = unzipSync(bytes, { filter: ({ name }) => !name.startsWith("__MACOSX/") && name.toLowerCase().endsWith(".kml") });
+    const [kml] = Object.values(kmls);
+    if (!kml) throw new Error("KMZ contains no .kml file");
+    text = strFromU8(kml);
+  } else {
+    text = new TextDecoder().decode(bytes);
+  }
+  if (text.trimStart().startsWith("<")) {
+    const doc = new DOMParser().parseFromString(text, "text/xml");
+    if (doc.querySelector("parsererror")) throw new Error("not a valid KML file");
+    const { kml } = await import("https://cdn.jsdelivr.net/npm/@tmcw/togeojson@7.1.3/+esm");
+    return kml(doc);
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("not a GeoJSON, KML, or KMZ file");
+  }
+}
+
+function polygonFrom(input) {
+  const polys = [];
+  const visit = (g) => {
+    if (!g) return;
+    if (Array.isArray(g)) return g.forEach(visit);
+    if (g.type === "FeatureCollection") return g.features.forEach(visit);
+    if (g.type === "Feature") return visit(g.geometry);
+    if (g.type === "GeometryCollection") return g.geometries.forEach(visit);
+    if (g.type === "Polygon") polys.push(g.coordinates.map((ring) => ring.map((c) => [c[0], c[1]])));
+    if (g.type === "MultiPolygon") g.coordinates.forEach((p) => polys.push(p.map((ring) => ring.map((c) => [c[0], c[1]]))));
+  };
+  visit(input);
+  if (!polys.length) throw new Error("no polygon found");
+  if (polys.flat(2).some(([x, y]) => !(Math.abs(x) <= 180 && Math.abs(y) <= 90))) {
+    throw new Error("coordinates are outside lon/lat range; the file must be in EPSG:4326");
+  }
+  return polys.length === 1 ? { type: "Polygon", coordinates: polys[0] } : { type: "MultiPolygon", coordinates: polys };
+}
+
+const fileInput = $("aoi-file");
+$("upload-aoi").addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", async () => {
+  const [file] = fileInput.files;
+  fileInput.value = "";
+  if (!file) return;
+  stopDrawing();
+  aoiMessage(`Reading ${file.name}…`);
+  try {
+    setAOI(polygonFrom(await readAOIFile(file)), { fit: true, name: file.name });
+    aoiMessage(`Loaded ${file.name}.`);
+  } catch (err) {
+    aoiMessage(`Could not read ${file.name}: ${err.message}`, true);
+  }
+});
+
+// ---- shareable link: view state lives in location.hash ----
+
+let hashSeq = 0;
+async function writeHash() {
+  if (!state.ready) return;
+  const seq = ++hashSeq;
+  const parts = [];
+  if (state.aoi) {
+    const aoi = state.aoi;
+    state.aoiToken ??= packGeometry(aoi).then((p) => `g:${p}`);
+    const token = await state.aoiToken;
+    if (seq !== hashSeq || aoi !== state.aoi) return;
+    parts.push(`aoi=${token}`);
+    if (state.aoiName) parts.push(`n=${encodeURIComponent(state.aoiName)}`);
+  }
+  if (state.disabled.size) parts.push(`off=${[...state.disabled].map(encodeURIComponent).join(",")}`);
+  if (state.minSeverity) parts.push(`sev=${state.minSeverity}`);
+  if (state.quakeDays !== 7) parts.push(`qd=${state.quakeDays}`);
+  if (!$("live").checked) parts.push("live=0");
+  if (state.selectedId) parts.push(`ev=${encodeURIComponent(state.selectedId)}`);
+  history.replaceState(null, "", parts.length ? `#${parts.join("&")}` : location.pathname + location.search);
+}
+
+function readHash(hash) {
+  return Object.fromEntries(hash.replace(/^#/, "").split("&").filter(Boolean).map((kv) => {
+    const i = kv.indexOf("=");
+    return i < 0 ? [kv, ""] : [kv.slice(0, i), kv.slice(i + 1)];
+  }));
+}
+
+async function applyHash(hash) {
+  const params = readHash(hash);
+  const dec = (s) => { try { return decodeURIComponent(s); } catch { return ""; } };
+  state.disabled = new Set(params.off ? params.off.split(",").map(dec).filter(Boolean) : []);
+  state.minSeverity = [0, 2, 3, 4].includes(Number(params.sev)) ? Number(params.sev) : 0;
+  state.quakeDays = [1, 3, 7].includes(Number(params.qd)) ? Number(params.qd) : 7;
+  $("min-severity").value = String(state.minSeverity);
+  $("quake-days").value = String(state.quakeDays);
+  $("live").checked = params.live !== "0";
+  state.pendingId = params.ev ? dec(params.ev) : null;
+  clearAOI();
+  if (params.aoi) {
+    const token = dec(params.aoi);
+    try {
+      const i = token.indexOf(":");
+      const [kind, body] = [token.slice(0, i), token.slice(i + 1)];
+      let geometry;
+      if (kind === "box") geometry = parseBox(body.replace(/,/g, " ")).geometry;
+      else if (kind === "g") geometry = await unpackGeometry(body);
+      else throw new Error("unknown area format");
+      setAOI(geometry, { fit: true, token: kind === "box" ? token : null, name: params.n ? dec(params.n) : null });
+      aoiMessage(params.n ? `Loaded shared area: ${dec(params.n)}.` : "Loaded shared area.");
+    } catch (err) {
+      aoiMessage(`Could not load the shared area (${err.message}).`, true);
+    }
+  }
+}
+
+window.addEventListener("hashchange", async () => {
+  state.ready = false;
+  await applyHash(location.hash);
+  buildHazardRows();
+  state.ready = true;
+  render();
+});
+
+const copyBtn = $("copy-link");
+copyBtn.addEventListener("click", async () => {
+  await writeHash();
+  try {
+    await navigator.clipboard.writeText(location.href);
+    copyBtn.textContent = "Link copied";
+    setTimeout(() => { copyBtn.textContent = "Copy link"; }, 1500);
+  } catch {
+    window.prompt("Copy this link:", location.href);
+  }
+});
+
+// ---- resizable sidebar ----
+
+const sidebar = $("sidebar");
+const dragHandle = $("drag");
+const clampWidth = (px) => Math.max(300, Math.min(px, window.innerWidth - 320));
+try {
+  const saved = localStorage.getItem("disasteralerts.sidebarWidth");
+  if (saved) sidebar.style.width = `${clampWidth(Number(saved))}px`;
+} catch {}
+dragHandle.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  dragHandle.setPointerCapture(e.pointerId);
+  dragHandle.classList.add("dragging");
+  const onMove = (ev) => { sidebar.style.width = `${clampWidth(ev.clientX - sidebar.getBoundingClientRect().left)}px`; };
+  dragHandle.addEventListener("pointermove", onMove);
+  dragHandle.addEventListener("pointerup", () => {
+    dragHandle.classList.remove("dragging");
+    dragHandle.removeEventListener("pointermove", onMove);
+    map.invalidateSize();
+    try { localStorage.setItem("disasteralerts.sidebarWidth", String(parseInt(sidebar.style.width, 10))); } catch {}
+  }, { once: true });
+});
+new ResizeObserver(() => map.invalidateSize()).observe($("map"));
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => render());
+
+// ---- start: snapshot first (fast), then live feeds on top ----
+
+async function start() {
+  state.matchCache = new Map();
+  await applyHash(location.hash);
+  try {
+    await loadSnapshot();
+  } catch (err) {
+    $("meta").textContent = `Snapshot unavailable (${err.message}); trying live feeds…`;
+  }
+  rebuild();
+  state.ready = true;
+  render();
+  if ($("live").checked) await tick();
+  else scheduleLive();
+}
+start();
+</script>
+</body>
+</html>

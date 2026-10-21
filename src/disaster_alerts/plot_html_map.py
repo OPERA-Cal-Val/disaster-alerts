@@ -17,7 +17,7 @@ import socket
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 
@@ -89,6 +89,18 @@ def _validate_remote_url(url: str) -> None:
         raise ValueError(f"Untrusted host for AOI download: {parsed.hostname}")
     if not _host_resolves_public(parsed.hostname):
         raise ValueError(f"Host resolves to a non-public address: {parsed.hostname}")
+
+
+def _safe_get(url: str, timeout: int = 30, max_redirects: int = 3, **kwargs):
+    # Follow redirects manually so every hop is re-checked against the allowlist.
+    for _ in range(max_redirects + 1):
+        _validate_remote_url(url)
+        response = requests.get(url, timeout=timeout, allow_redirects=False, **kwargs)
+        if not response.is_redirect:
+            return response
+        url = urljoin(url, response.headers["Location"])
+        response.close()
+    raise ValueError(f"Too many redirects fetching AOI (max {max_redirects})")
 
 
 def _detect_family(event_type: str) -> str:
@@ -1650,9 +1662,7 @@ def _download_url_to_file(
     if ensure_geojson and output_path.suffix.lower() != ".geojson":
         output_path = output_path.with_suffix(".geojson")
 
-    _validate_remote_url(url)
-
-    response = requests.get(url, timeout=timeout, stream=True)
+    response = _safe_get(url, timeout=timeout, stream=True)
     response.raise_for_status()
     ctype = (response.headers.get("Content-Type") or "").lower()
     if "json" not in ctype:
@@ -1719,8 +1729,7 @@ def _geometry_from_file(path: str | Path):
                 geometries = []
                 for zone_url in affected:
                     try:
-                        _validate_remote_url(zone_url)
-                        resp = requests.get(zone_url, timeout=30)
+                        resp = _safe_get(zone_url, timeout=30)
                         resp.raise_for_status()
                         if len(resp.content) > MAX_GEOJSON_BYTES:
                             raise ValueError(

@@ -1,0 +1,77 @@
+name: Events Map
+
+# Snapshot of filtered NWS/USGS events, published to GitHub Pages.
+# The page also refreshes itself from the live feeds every 5 minutes, so this
+# schedule only needs to keep the snapshot (and its NWS zone outlines) current.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/disaster_alerts/viewer_assets/**'
+      - 'src/disaster_alerts/export.py'
+      - 'src/disaster_alerts/rules.py'
+      - 'src/disaster_alerts/providers/**'
+      - 'config/app.yaml'
+      - 'config/thresholds.yaml'
+      - '.github/workflows/events-map.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package (viewer extra only)
+        run: pip install ".[viewer]"
+
+      - name: Restore NWS zone outlines
+        uses: actions/cache@v4
+        with:
+          path: .cache/nws_zones
+          key: nws-zones-${{ github.run_id }}
+          restore-keys: nws-zones-
+
+      # recipients.yaml is git-ignored, so CI never sees addresses; none are needed here.
+      - name: Build events snapshot
+        env:
+          DISASTER_ALERTS_UA: "disaster-alerts-map (+https://github.com/${{ github.repository }})"
+        run: disaster-alerts-export --root . --output site/data --zone-cache .cache/nws_zones
+
+      - name: Assemble site
+        run: |
+          cp src/disaster_alerts/viewer_assets/index.html site/index.html
+          touch site/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -33,6 +33,9 @@ dependencies = [
   "yagmail>=0.15.293",
 ]
 
+[project.optional-dependencies]
+viewer = ["shapely>=2.0"]
+
 [project.urls]
 Homepage = "https://example.invalid/disaster-alerts"
 Repository = "https://example.invalid/disaster-alerts.git"
@@ -41,6 +44,7 @@ Issues = "https://example.invalid/disaster-alerts/issues"
 # Optional: installable CLI entry point `disaster-alerts`
 [project.scripts]
 disaster-alerts = "disaster_alerts.cli:main"
+disaster-alerts-export = "disaster_alerts.export:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -48,6 +52,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["disaster_alerts*"]
+
+[tool.setuptools.package-data]
+disaster_alerts = ["viewer_assets/*.html"]
 
 # ---- Dev tooling (optional) ----
 
