@@ -166,6 +166,20 @@ class AppConfig(BaseModel):
         default=False,
         description="Generate an HTML file with geometries of events AOIs",
     )
+    lookback_days: float = Field(
+        default=0.0,
+        description=(
+            "Web map only: days of past (ended) NWS warnings to include; "
+            "0 = active only. E-mail alerts always use active alerts."
+        ),
+    )
+
+    @field_validator("lookback_days")
+    @classmethod
+    def _check_lookback(cls, v: float) -> float:
+        if v < 0 or v > 30:
+            raise ValueError("lookback_days must be between 0 and 30")
+        return v
 
     @field_validator("log_level")
     @classmethod

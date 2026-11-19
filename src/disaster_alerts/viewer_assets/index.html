@@ -162,6 +162,11 @@ button.active { border-color: var(--ink-2); background: var(--surface); font-wei
 .event .what { flex: 1; min-width: 0; }
 .event .when { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .event .sub { flex-basis: 100%; margin-left: 20px; color: var(--ink-2); font-size: 12.5px; }
+.event.ended .what, .event.ended .chip { opacity: 0.55; }
+.event .tag-ended {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+  border: 1px solid var(--hairline); border-radius: 4px; padding: 0 4px;
+}
 .event .detail {
   display: none;
   flex-basis: 100%;
@@ -242,22 +247,23 @@ button.active { border-color: var(--ink-2); background: var(--surface); font-wei
     <section>
       <h2>Filters</h2>
       <div class="row">
-        <label>Min severity
-          <select id="min-severity">
-            <option value="0">Any</option>
-            <option value="2">Moderate+</option>
-            <option value="3">Severe / Strong+</option>
-            <option value="4">Extreme / Major+</option>
-          </select>
+        <label>Time window
+          <select id="window-days"></select>
         </label>
-        <label>Quakes from
-          <select id="quake-days">
-            <option value="1">last 24 h</option>
-            <option value="3">last 3 days</option>
-            <option value="7" selected>last 7 days</option>
-          </select>
+        <label id="show-ended-wrap"><input type="checkbox" id="show-ended" checked> Show ended warnings (expired or canceled)</label>
+      </div>
+      <div class="note" id="window-note"></div>
+      <div class="row" style="margin-top: 8px">
+        <label>NWS warning severity
+          <select id="warn-severity"></select>
         </label>
       </div>
+      <div class="row" style="margin-top: 8px">
+        <label>Earthquakes
+          <select id="quake-class"></select>
+        </label>
+      </div>
+      <div class="note" id="quake-note"></div>
       <div class="row" style="margin-top: 8px">
         <label><input type="checkbox" id="live" checked> Live refresh every 5 min</label>
         <button id="refresh-now" title="Fetch the latest NWS and USGS feeds now">Refresh now</button>
@@ -323,6 +329,13 @@ const SENSORS = [
 const SEVERITY_RANK = {
   unknown: 0, minor: 1, light: 1, moderate: 2, severe: 3, strong: 3, extreme: 4, major: 4, great: 4,
 };
+const WARN_SEVERITIES = ["Moderate", "Severe", "Extreme"];
+// Viewer-only magnitude bands for the Earthquakes filter; upper bounds are exclusive.
+const QUAKE_CLASSES = [
+  { key: "moderate", label: "Moderate", max: 5 },
+  { key: "strong", label: "Strong", min: 5, max: 7 },
+  { key: "extreme", label: "Extreme", min: 7 },
+];
 // Same hues as plot_html_map.FAMILY_HUES; only used for event types the snapshot has no colour for.
 const FAMILY_HUES = { flood: 210, hurricane: 120, storm: 10, thunderstorm: 270, earthquake: 45 };
 
@@ -364,8 +377,10 @@ const state = {
   liveError: null,
   events: [],
   disabled: new Set(),
-  minSeverity: 0,
-  quakeDays: 7,
+  warnSeverity: "all",
+  quakeClass: "all",
+  windowDays: null,
+  showEnded: true,
   selectedId: null,
 };
 
@@ -622,8 +637,16 @@ async function refreshLive() {
   state.liveError = errors.length ? errors.join("; ") : null;
 }
 
+const isEnded = (p) => p.provider === "nws" && (p.status === "expired" || p.status === "canceled");
+
+// Live refresh only sees active alerts; ended ones always come from the snapshot.
 function currentFeatures() {
-  return [...(state.live.nws ?? state.snapshot.nws), ...(state.live.usgs ?? state.snapshot.usgs)];
+  const snapEnded = state.snapshot.nws.filter((f) => isEnded(f.properties));
+  const snapActive = state.snapshot.nws.filter((f) => !isEnded(f.properties));
+  const active = state.live.nws ?? snapActive;
+  const activeIds = new Set(active.map((f) => f.id));
+  const ended = snapEnded.filter((f) => !activeIds.has(f.id));
+  return [...active, ...ended, ...(state.live.usgs ?? state.snapshot.usgs)];
 }
 
 let liveTimer = null;
@@ -677,12 +700,16 @@ function toEvent(f) {
   try {
     if (f.geometry) bbox = turf.bbox(f.geometry);
   } catch {}
-  return { id: f.id, p, geometry: f.geometry, bbox, time: parseTime(p.time), color: colorOf(p.event) };
+  const ended = isEnded(p) ? parseTime(p.ended) || parseTime(p.expires) || new Date() : null;
+  return { id: f.id, p, geometry: f.geometry, bbox, time: parseTime(p.time), ended, color: colorOf(p.event) };
 }
 
 function rebuild() {
   state.events = currentFeatures().map(toEvent);
   buildHazardRows();
+  buildWindowControls();
+  buildQuakeControls();
+  buildWarnControls();
   updateMeta();
   render();
 }
@@ -690,7 +717,10 @@ function rebuild() {
 function updateMeta() {
   const dot = $("live-dot");
   const fmt = (d) => d.toUTCString().replace(/:\d\d GMT$/, " UTC");
-  const parts = [`${state.events.length} active event${state.events.length === 1 ? "" : "s"}`];
+  const nEnded = state.events.filter((e) => e.ended).length;
+  const nActive = state.events.length - nEnded;
+  const parts = [`${nActive} active event${nActive === 1 ? "" : "s"}`];
+  if (nEnded) parts.push(`${nEnded} ended warning${nEnded === 1 ? "" : "s"}`);
   if (state.liveAt) parts.push(`live ${fmt(state.liveAt)}`);
   const snapAt = parseTime(state.meta.generated_at);
   if (snapAt) parts.push(`snapshot ${fmt(snapAt)}`);
@@ -701,7 +731,6 @@ function updateMeta() {
 
   const flt = state.filters;
   const bits = [];
-  if (flt.earthquake?.min_magnitude != null) bits.push(`earthquakes M${flt.earthquake.min_magnitude}+`);
   if (flt.weather?.include_events?.length) bits.push(`${flt.weather.include_events.length} NWS warning types`);
   if (flt.min_severity) bits.push(`severity ≥ ${flt.min_severity}`);
   if (flt.aoi) bits.push("limited to the configured AOI");
@@ -731,12 +760,87 @@ function buildHazardRows() {
   }));
 }
 
+// Lowest magnitude that can reach the viewer: the configured threshold, else the USGS query floor.
+function quakeFloor() {
+  return state.filters.earthquake?.min_magnitude ?? state.filters.usgs_query_min_magnitude ?? null;
+}
+
+const fmtMag = (m) => Number(m).toFixed(1);
+
+function quakeClassLabel(c, floor) {
+  const lo = floor != null && (c.min == null || floor > c.min) ? floor : c.min;
+  if (lo != null && c.max != null) return `${c.label} (M ${fmtMag(lo)} – ${fmtMag(c.max)})`;
+  if (c.max != null) return `${c.label} (M < ${fmtMag(c.max)})`;
+  return `${c.label} (M ≥ ${fmtMag(lo)})`;
+}
+
+function buildQuakeControls() {
+  const floor = quakeFloor();
+  const maxDepth = state.filters.earthquake?.max_depth_km;
+  const classes = QUAKE_CLASSES.filter((c) => floor == null || c.max == null || floor < c.max);
+  if (!classes.some((c) => c.key === state.quakeClass)) state.quakeClass = "all";
+  const allLabel = floor != null ? `All (M ≥ ${fmtMag(floor)})` : "All";
+  $("quake-class").replaceChildren(
+    el("option", { value: "all", textContent: allLabel }),
+    ...classes.map((c) => el("option", { value: c.key, textContent: quakeClassLabel(c, floor) })),
+  );
+  $("quake-class").value = state.quakeClass;
+
+  const bits = [];
+  if (floor != null) bits.push(`magnitude ≥ ${fmtMag(floor)}`);
+  if (maxDepth != null) bits.push(`depth ≤ ${maxDepth} km`);
+  $("quake-note").textContent = bits.length
+    ? `Earthquake thresholds (config/thresholds.yaml): ${bits.join(", ")}. Smaller or deeper quakes are never shown.`
+    : "";
+}
+
+// Levels below a configured global min_severity can never reach the viewer, so they are not offered.
+function buildWarnControls() {
+  const floor = severityRank(state.filters.min_severity);
+  const levels = WARN_SEVERITIES.filter((s) => severityRank(s) >= floor);
+  if (!levels.includes(state.warnSeverity)) state.warnSeverity = "all";
+  $("warn-severity").replaceChildren(
+    el("option", { value: "all", textContent: "All" }),
+    ...levels.map((s) => el("option", { value: s, textContent: s })),
+  );
+  $("warn-severity").value = state.warnSeverity;
+}
+
+function inQuakeClass(mag) {
+  if (state.quakeClass === "all") return true;
+  const c = QUAKE_CLASSES.find((x) => x.key === state.quakeClass);
+  if (!c || mag == null) return false;
+  return (c.min == null || mag >= c.min) && (c.max == null || mag < c.max);
+}
+
+const nwsLookback = () => Number(state.filters.nws_lookback_days) || 0;
+const usgsLookback = () => Number(state.filters.usgs_lookback_days) || 7;
+const fmtDays = (d) => (d === 1 ? "last 24 h" : `last ${d} days`);
+
+function buildWindowControls() {
+  const maxDays = Math.max(nwsLookback(), usgsLookback());
+  const days = [...new Set([1, 3, 7].filter((d) => d < maxDays).concat(maxDays))];
+  if (!days.includes(state.windowDays)) state.windowDays = maxDays;
+  $("window-days").replaceChildren(...days.map((d) => el("option", { value: String(d), textContent: fmtDays(d) })));
+  $("window-days").value = String(state.windowDays);
+
+  const history = nwsLookback() > 0;
+  $("show-ended-wrap").hidden = !history;
+  $("window-note").textContent = history
+    ? "Active warnings are always shown. Ended warnings (dashed on the map) and earthquakes are limited to this window."
+    : "Only active NWS warnings are available; the window applies to earthquakes.";
+}
+
 function visibleEvents() {
-  const quakeCutoff = Date.now() - state.quakeDays * 86400000;
+  const cutoff = Date.now() - state.windowDays * 86400000;
   return state.events.filter((e) => {
     if (state.disabled.has(e.p.event)) return false;
-    if (state.minSeverity && severityRank(e.p.severity) < state.minSeverity) return false;
-    return !(e.p.provider === "usgs" && e.time && e.time.getTime() < quakeCutoff);
+    if (e.p.provider === "usgs") {
+      if (!inQuakeClass(e.p.magnitude)) return false;
+      return !(e.time && e.time.getTime() < cutoff);
+    }
+    if (e.ended && (!state.showEnded || e.ended.getTime() < cutoff)) return false;
+    return state.warnSeverity === "all" || severityRank(e.p.severity) === severityRank(state.warnSeverity);
   });
 }
 
@@ -759,6 +863,8 @@ function headline(e) {
   return e.p.area || e.p.title || e.p.event;
 }
 
+const endedLabel = (e) => (e.p.status === "canceled" ? "canceled" : "expired");
+
 function detailFields(e) {
   const p = e.p;
   if (p.provider === "usgs") {
@@ -772,9 +878,10 @@ function detailFields(e) {
     ];
   }
   return [
+    ["status", e.ended ? `${endedLabel(e)} ${fmtUTC(e.ended)} (${fmtAgo(e.ended)})` : "active"],
     ["severity", [p.severity, p.urgency, p.certainty].filter(Boolean).join(" · ")],
     ["onset", fmtUTC(e.time)],
-    ["expires", fmtUTC(parseTime(p.expires))],
+    ["expires", e.ended ? null : fmtUTC(parseTime(p.expires))],
     ["issued by", p.sender],
     ["shape", p.geometry_source === "zones" ? "NWS forecast zones (approximate)" : null],
   ];
@@ -815,6 +922,7 @@ function buildDetail(e) {
 function popupFor(e) {
   const box = el("div", { className: "popup" }, el("b", { textContent: e.p.event }), el("div", { textContent: headline(e) }));
   if (e.time) box.append(el("div", { textContent: `${fmtUTC(e.time)} (${fmtAgo(e.time)})` }));
+  if (e.ended) box.append(el("div", { textContent: `Ended: ${endedLabel(e)} ${fmtAgo(e.ended)}` }));
   const btn = el("button", { textContent: "Details & satellite passes", style: "margin-top:6px;padding:3px 9px;font-size:12px" });
   btn.addEventListener("click", () => { selectEvent(e.id, { scroll: true }); if (e.geometry) showPasses(e); });
   box.append(btn);
@@ -831,7 +939,9 @@ function layerFor(e) {
     e.baseStyle = { color: e.color, weight: 1.5, fillColor: e.color, fillOpacity: 0.55, radius: quakeRadius(e.p.magnitude) };
     return L.circleMarker([lat, lng], e.baseStyle);
   }
-  e.baseStyle = { color: e.color, weight: 2, fillColor: e.color, fillOpacity: 0.3 };
+  e.baseStyle = e.ended
+    ? { color: e.color, weight: 1, opacity: 0.6, dashArray: "4 4", fillColor: e.color, fillOpacity: 0.08 }
+    : { color: e.color, weight: 2, fillColor: e.color, fillOpacity: 0.3 };
   return L.geoJSON(e.geometry, { style: () => e.baseStyle });
 }
 
@@ -855,12 +965,13 @@ function render() {
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
     .forEach(([type, evs]) => {
       items.push(el("div", { className: "group-head", textContent: `${type} (${evs.length})` }));
-      evs.sort((a, b) => (b.time?.getTime() || 0) - (a.time?.getTime() || 0)).forEach((e) => {
+      evs.sort((a, b) => !!a.ended - !!b.ended || (b.time?.getTime() || 0) - (a.time?.getTime() || 0)).forEach((e) => {
         const chip = el("span", { className: `chip${e.p.family === "earthquake" ? " round" : ""}` });
         chip.style.background = e.color;
-        const row = el("div", { className: "event" },
+        const row = el("div", { className: `event${e.ended ? " ended" : ""}` },
           chip,
           el("span", { className: "what", textContent: headline(e) }),
+          e.ended ? el("span", { className: "tag-ended", textContent: endedLabel(e) }) : null,
           el("span", { className: "when", textContent: fmtAgo(e.time), title: fmtUTC(e.time) }),
           e.geometry ? null : el("span", { className: "sub", textContent: "No shape available; not shown on the map." }),
           buildDetail(e));
@@ -869,8 +980,9 @@ function render() {
         items.push(row);
       });
     });
-  // Draw small quakes last so they stay clickable on top of large warning polygons.
+  // Ended warnings first, then active ones, then small quakes last so they stay clickable.
   [...shown].sort((a, b) => (a.p.family === "earthquake") - (b.p.family === "earthquake")
+    || !!b.ended - !!a.ended
     || (b.p.magnitude ?? 0) - (a.p.magnitude ?? 0)).forEach((e) => {
     const layer = layerFor(e);
     if (!layer) return;
@@ -909,7 +1021,7 @@ function selectEvent(id, { scroll = false, pan = true } = {}) {
   state.selectedId = e ? id : null;
   if (e) {
     e.row?.classList.add("sel");
-    e.layer?.setStyle?.({ weight: 3.5, fillOpacity: e.geometry?.type === "Point" ? 0.85 : 0.5 });
+    e.layer?.setStyle?.({ weight: 3.5, opacity: 1, fillOpacity: e.geometry?.type === "Point" ? 0.85 : 0.5 });
     e.layer?.bringToFront?.();
     if (scroll) e.row?.scrollIntoView({ block: "nearest" });
     if (pan) zoomTo(e);
@@ -917,8 +1029,10 @@ function selectEvent(id, { scroll = false, pan = true } = {}) {
   }
 }
 
-$("min-severity").addEventListener("change", (ev) => { state.minSeverity = Number(ev.target.value); render(); });
-$("quake-days").addEventListener("change", (ev) => { state.quakeDays = Number(ev.target.value); render(); });
+$("warn-severity").addEventListener("change", (ev) => { state.warnSeverity = ev.target.value; render(); });
+$("quake-class").addEventListener("change", (ev) => { state.quakeClass = ev.target.value; render(); });
+$("window-days").addEventListener("change", (ev) => { state.windowDays = Number(ev.target.value); render(); });
+$("show-ended").addEventListener("change", (ev) => { state.showEnded = ev.target.checked; render(); });
 
 // ---- satellite passes: the same precomputed schedule the Next Pass site uses ----
 

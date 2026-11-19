@@ -40,13 +40,15 @@ def _enabled_provider_keys(settings: Settings) -> List[str]:
     return keys
 
 
-def fetch_from_enabled(settings: Settings) -> List[Event]:
+def fetch_from_enabled(settings: Settings, lookback_days: float = 0.0) -> List[Event]:
     """
     Fetch events from all providers enabled in settings.app.providers.
 
+    lookback_days > 0 asks providers for past events too (web map only).
     Returns a flat list of Event dicts. Failures in one provider do not prevent
     others from returning results; errors are logged and skipped.
     """
+    kwargs = {"lookback_days": lookback_days} if lookback_days > 0 else {}
     results: List[Event] = []
     keys = _enabled_provider_keys(settings)
     if not keys:
@@ -60,7 +62,7 @@ def fetch_from_enabled(settings: Settings) -> List[Event]:
             log.warning("Provider '%s' is not registered; skipping", key)
             continue
         try:
-            evs = fn(settings)
+            evs = fn(settings, **kwargs)
         except Exception as e:
             log.error("Provider '%s' failed: %s", key, e, exc_info=False)
             continue

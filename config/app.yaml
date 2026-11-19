@@ -11,6 +11,11 @@ log_level: INFO
 #     - [[-124.5, 32.0], [-114.0, 32.0], [-114.0, 37.5], [-124.5, 37.5], [-124.5, 32.0]]
 aoi: null
 
+# Web map only: days of past NWS warnings to include (0 = active only; NWS keeps
+# at most 7 days). Also sets how far back earthquakes go (7 days when 0).
+# E-mail alerts are unaffected. Override per run: disaster-alerts-export -k DAYS
+lookback_days: 7
+
 # Enable/disable data sources
 providers:
   nws: true    # National Weather Service alerts
