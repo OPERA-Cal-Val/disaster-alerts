@@ -209,3 +209,79 @@ def test_export_never_touches_state_or_email(
 
     assert state_file.read_text() == before
     assert sorted(p.name for p in settings.paths.data_dir.iterdir()) == ["state.json"]
+
+
+def test_lookback_reaches_providers_and_snapshot(settings, monkeypatch, zone_calls):
+    seen = {}
+
+    def fake_nws(s, lookback_days=0.0):
+        seen["nws"] = lookback_days
+        ended = _alert("old", "Flood Warning", geometry=_square(-90, 30))
+        ended.update(status="expired", ended="2026-10-20T12:00:00+00:00")
+        live = _alert("live", "Storm Warning", geometry=_square(-80, 30))
+        live["status"] = "active"
+        return [live, ended]
+
+    def fake_usgs(s, lookback_days=7.0):
+        seen["usgs"] = lookback_days
+        return []
+
+    monkeypatch.setattr("disaster_alerts.providers.nws.fetch_events", fake_nws)
+    monkeypatch.setattr("disaster_alerts.providers.usgs.fetch_events", fake_usgs)
+
+    collection, meta = export.build_snapshot(settings, lookback_days=10)
+
+    assert seen == {"nws": 10, "usgs": 10}
+    props = {f["id"]: f["properties"] for f in collection["features"]}
+    assert props["old"]["status"] == "expired"
+    assert props["old"]["ended"] == "2026-10-20T12:00:00+00:00"
+    assert props["live"]["status"] == "active"
+    assert "ended" not in props["live"]
+    assert meta["by_status"] == {"active": 1, "expired": 1}
+    assert meta["filters"]["nws_lookback_days"] == 7.0
+    assert meta["filters"]["usgs_lookback_days"] == 10
+
+
+def test_lookback_defaults_to_config(settings, monkeypatch, zone_calls):
+    seen = []
+    monkeypatch.setattr(
+        "disaster_alerts.providers.nws.fetch_events",
+        lambda s, **kw: seen.append(kw)
+        or [_alert("live", "Flood Warning", geometry=_square(-90, 30))],
+    )
+    monkeypatch.setattr(
+        "disaster_alerts.providers.usgs.fetch_events", lambda s, **kw: []
+    )
+
+    _, meta0 = export.build_snapshot(settings)
+    settings.app.lookback_days = 2
+    _, meta2 = export.build_snapshot(settings)
+
+    assert seen == [{}, {"lookback_days": 2}]
+    assert meta0["filters"]["nws_lookback_days"] == 0
+    assert meta0["filters"]["usgs_lookback_days"] == export.USGS_LOOKBACK_DAYS
+    assert meta2["filters"]["nws_lookback_days"] == 2
+
+
+def test_self_intersecting_polygon_is_repaired(settings, patch_nws, patch_usgs):
+    bowtie = {
+        "type": "Polygon",
+        "coordinates": [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]],
+    }
+    patch_usgs([])
+    patch_nws([_alert("bow", "Flood Warning", geometry=bowtie)])
+
+    collection, _ = export.build_snapshot(settings)
+
+    assert collection["features"][0]["geometry"]["type"] in {"Polygon", "MultiPolygon"}
+
+
+@pytest.mark.parametrize("bad", ["-1", "abc"])
+def test_lookback_flag_rejects_bad_values(bad):
+    with pytest.raises(SystemExit):
+        export._parse_args(["-k", bad])
+
+
+def test_lookback_flag_parses():
+    assert export._parse_args(["-k", "2.5"]).lookback_days == 2.5
+    assert export._parse_args([]).lookback_days is None

@@ -17,10 +17,13 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from shapely.geometry import mapping, shape
 from shapely.ops import unary_union
+from shapely.validation import make_valid
 
 from . import providers, rules
 from .plot_html_map import _color_from_event_type, _detect_family
 from .providers import common
+from .providers.nws import NWS_MAX_LOOKBACK_DAYS
+from .providers.usgs import DEFAULT_LOOKBACK_DAYS as USGS_LOOKBACK_DAYS
 from .providers.usgs import _iso_from_ms
 from .settings import Settings
 
@@ -32,7 +35,6 @@ SIMPLIFY_DEG = 0.005
 COORD_DECIMALS = 4
 MAX_TEXT_CHARS = 1500
 ZONE_WORKERS = 6
-USGS_LOOKBACK_DAYS = 7
 USGS_DEFAULT_MIN_MAGNITUDE = 2.5
 
 
@@ -60,6 +62,8 @@ def _polygonal(geom):
 
 
 def _clean_geometry(geom) -> Optional[Dict[str, Any]]:
+    if not geom.is_valid:
+        geom = make_valid(geom)
     geom = _polygonal(geom)
     if geom is None:
         return None
@@ -137,7 +141,7 @@ class ZoneCache:
 
     def union(self, urls: Iterable[str]) -> Optional[Dict[str, Any]]:
         parts = [
-            shape(self.geoms[k])
+            make_valid(shape(self.geoms[k]))
             for k in (_zone_key(u) for u in urls)
             if k in self.geoms
         ]
@@ -214,6 +218,8 @@ def _feature(
         )
     else:
         out.update(
+            status=e.get("status"),
+            ended=e.get("ended"),
             time=props.get("onset") or props.get("effective") or props.get("sent"),
             expires=props.get("ends") or props.get("expires"),
             area=props.get("areaDesc"),
@@ -239,7 +245,7 @@ def _usgs_query_min_magnitude(settings: Settings) -> float:
     return USGS_DEFAULT_MIN_MAGNITUDE
 
 
-def _filters(settings: Settings) -> Dict[str, Any]:
+def _filters(settings: Settings, lookback_days: float) -> Dict[str, Any]:
     """The rules the browser re-applies to live feeds, so both views agree."""
     thr = settings.thresholds
     return {
@@ -254,7 +260,8 @@ def _filters(settings: Settings) -> Dict[str, Any]:
             else None
         ),
         "aoi": settings.app.aoi,
-        "usgs_lookback_days": USGS_LOOKBACK_DAYS,
+        "nws_lookback_days": min(lookback_days, NWS_MAX_LOOKBACK_DAYS),
+        "usgs_lookback_days": lookback_days or USGS_LOOKBACK_DAYS,
         "usgs_query_min_magnitude": _usgs_query_min_magnitude(settings),
     }
 
@@ -268,10 +275,15 @@ def _colors(settings: Settings, features: List[Dict[str, Any]]) -> Dict[str, str
 
 
 def build_snapshot(
-    settings: Settings, zones: Optional[ZoneCache] = None
+    settings: Settings,
+    zones: Optional[ZoneCache] = None,
+    lookback_days: Optional[float] = None,
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """lookback_days defaults to settings.app.lookback_days."""
     zones = zones or ZoneCache()
-    fetched = providers.fetch_from_enabled(settings)
+    if lookback_days is None:
+        lookback_days = settings.app.lookback_days
+    fetched = providers.fetch_from_enabled(settings, lookback_days)
     fetched = [e for e in fetched if isinstance(e, dict) and "id" in e]
     raw_counts = Counter(str(e.get("provider")) for e in fetched)
     if "nws" in settings.enabled_providers and not raw_counts.get("nws"):
@@ -300,12 +312,19 @@ def build_snapshot(
         "providers": settings.enabled_providers,
         "fetched": dict(raw_counts),
         "by_event": dict(Counter(f["properties"]["event"] for f in features)),
+        "by_status": dict(
+            Counter(
+                f["properties"].get("status", "active")
+                for f in features
+                if f["properties"]["provider"] == "nws"
+            )
+        ),
         "zones": {
             "cached": zones.hits,
             "fetched": zones.fetched,
             "failed": zones.failed,
         },
-        "filters": _filters(settings),
+        "filters": _filters(settings, lookback_days),
         "colors": _colors(settings, features),
     }
     return {"type": "FeatureCollection", "features": features}, meta
@@ -327,6 +346,16 @@ def write_snapshot(
     return events_path
 
 
+def _non_negative_float(s: str) -> float:
+    try:
+        v = float(s)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not a number: {s!r}")
+    if v < 0:
+        raise argparse.ArgumentTypeError("must be >= 0")
+    return v
+
+
 def _parse_args(argv: Optional[List[str]]) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="disaster-alerts-export",
@@ -342,6 +371,16 @@ def _parse_args(argv: Optional[List[str]]) -> argparse.Namespace:
         help="Directory for cached NWS zone outlines.",
     )
     p.add_argument("--root", type=Path, help="Repo root holding config/.")
+    p.add_argument(
+        "-k",
+        "--lookback-days",
+        type=_non_negative_float,
+        help=(
+            "Also include NWS warnings that ended in the last DAYS days "
+            "(NWS keeps at most 7; 0 = active only) and earthquakes from that "
+            "window. Defaults to lookback_days in config/app.yaml."
+        ),
+    )
     p.add_argument(
         "-l",
         "--log-level",
@@ -360,7 +399,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     settings = Settings.load(root=args.root)
     zones = ZoneCache(args.zone_cache)
     try:
-        collection, meta = build_snapshot(settings, zones)
+        collection, meta = build_snapshot(settings, zones, args.lookback_days)
     except SnapshotError as exc:
         log.error("%s", exc)
         return 1

@@ -53,7 +53,12 @@ def _float_or_none(x: Any) -> Optional[float]:
         return None
 
 
-def fetch_events(settings: Settings) -> List[Event]:
+DEFAULT_LOOKBACK_DAYS = 7.0
+
+
+def fetch_events(
+    settings: Settings, lookback_days: float = DEFAULT_LOOKBACK_DAYS
+) -> List[Event]:
     """Fetch recent USGS earthquakes and normalize into Event dicts."""
     # min magnitude from thresholds (fallback 2.5)
     minmag = 2.5
@@ -64,9 +69,8 @@ def fetch_events(settings: Settings) -> List[Event]:
     except Exception:
         pass
 
-    # last 7 days
     end = _utc_now()
-    start = end - timedelta(days=7)
+    start = end - timedelta(days=lookback_days or DEFAULT_LOOKBACK_DAYS)
 
     params = {
         "format": "geojson",

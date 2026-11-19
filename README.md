@@ -7,6 +7,8 @@
 Cron-friendly email alerts for significant **USGS earthquakes** and **NWS weather events**.
 Runs on a schedule, pulls fresh events, filters by your thresholds/AOI, and emails concise HTML + plain-text digests.
 
+**Live events map: [opera-cal-val.github.io/disaster-alerts](https://opera-cal-val.github.io/disaster-alerts/)** — active and recently ended NWS warnings and USGS earthquakes, refreshed every 10 minutes, with upcoming satellite passes for each event.
+
 ---
 
 ## Features
